@@ -15,14 +15,14 @@ export default function AuthPage({ mode = 'login' }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
-  useEffect(() => { if (searchParams.get('oauth_error')) setError('Login Google/GitHub gagal atau belum dikonfigurasi. Periksa OAuth credentials dan callback URL di README.') }, [searchParams])
+  useEffect(() => { if (searchParams.get('oauth_error')) setError('Google/GitHub sign-in failed or is not configured. Check the OAuth credentials and callback URL in the README.') }, [searchParams])
 
   const nextPath = searchParams.get('next')?.startsWith('/') && !searchParams.get('next')?.startsWith('//') ? searchParams.get('next') : '/app'
 
   async function socialLogin(provider) {
     setError('')
     if (!configured) {
-      setError('Neon database belum dikonfigurasi. Isi DATABASE_URL di environment Vercel.')
+      setError('The Neon database is not configured. Set DATABASE_URL in your Vercel environment variables.')
       return
     }
     setBusy(true)
@@ -30,10 +30,10 @@ export default function AuthPage({ mode = 'login' }) {
       const query = new URLSearchParams({ action: 'oauth-url', provider, next: nextPath })
       const response = await fetch(`/api/auth?${query}`, { credentials: 'same-origin', cache: 'no-store' })
       const payload = await response.json().catch(() => ({}))
-      if (!response.ok || !payload.url) throw new Error(payload.error || 'Tidak dapat memulai OAuth.')
+      if (!response.ok || !payload.url) throw new Error(payload.error || 'Could not start OAuth.')
       window.location.assign(payload.url)
     } catch (authError) {
-      setError(authError.message || 'Tidak dapat memulai login sosial.')
+      setError(authError.message || 'Could not start social sign-in.')
       setBusy(false)
     }
   }
@@ -43,11 +43,11 @@ export default function AuthPage({ mode = 'login' }) {
     setError('')
     setNotice('')
     if (!configured) {
-      setError('Neon database belum dikonfigurasi. Tambahkan DATABASE_URL terlebih dahulu.')
+      setError('The Neon database is not configured. Add DATABASE_URL first.')
       return
     }
     if (password.length < 8) {
-      setError('Password minimal 8 karakter.')
+      setError('Password must be at least 8 characters long.')
       return
     }
     setBusy(true)
@@ -59,11 +59,11 @@ export default function AuthPage({ mode = 'login' }) {
         body: JSON.stringify({ email: email.trim(), password }),
       })
       const payload = await response.json().catch(() => ({}))
-      if (!response.ok) throw new Error(payload.error || 'Tidak dapat memproses autentikasi.')
+      if (!response.ok) throw new Error(payload.error || 'Could not complete authentication.')
       await refreshUser()
       navigate(nextPath, { replace: true })
     } catch (authError) {
-      setError(authError.message || 'Tidak dapat memproses autentikasi.')
+      setError(authError.message || 'Could not complete authentication.')
     } finally {
       setBusy(false)
     }

@@ -14,23 +14,23 @@ function json(res, status, payload) {
 
 function normalizeConversation(input) {
   if (!input || !PUBLIC_ID_PATTERN.test(String(input.id || ''))) {
-    const error = new Error('ID percakapan tidak valid.')
+    const error = new Error('Invalid conversation ID.')
     error.status = 400
     throw error
   }
   if (!Array.isArray(input.messages) || input.messages.length > 120) {
-    const error = new Error('Format riwayat percakapan tidak valid.')
+    const error = new Error('Invalid conversation history format.')
     error.status = 400
     throw error
   }
   const messages = input.messages.map((message) => {
     if (!message || !MESSAGE_ID_PATTERN.test(String(message.id || '')) || !['user', 'assistant'].includes(message.role) || typeof message.content !== 'string') {
-      const error = new Error('Salah satu pesan memiliki format yang tidak valid.')
+      const error = new Error('One of the messages has an invalid format.')
       error.status = 400
       throw error
     }
     if (message.content.length > 100000) {
-      const error = new Error('Pesan terlalu panjang.')
+      const error = new Error('Message is too long.')
       error.status = 413
       throw error
     }
@@ -100,7 +100,7 @@ export default async function handler(req, res) {
 
     if (req.method === 'DELETE') {
       const id = String(req.query?.id || '')
-      if (!PUBLIC_ID_PATTERN.test(id)) return json(res, 400, { error: 'ID percakapan tidak valid.' })
+      if (!PUBLIC_ID_PATTERN.test(id)) return json(res, 400, { error: 'Invalid conversation ID.' })
       await sql`DELETE FROM perfectly_conversations WHERE public_id = ${id} AND user_id = ${user.id}::uuid`
       return json(res, 200, { ok: true })
     }
@@ -110,6 +110,6 @@ export default async function handler(req, res) {
   } catch (error) {
     const status = Number.isInteger(error.status) ? error.status : 500
     if (status >= 500) console.error('[Perfectly Chats]', error)
-    return json(res, status, { error: error.message || 'Tidak dapat mengakses riwayat chat.' })
+    return json(res, status, { error: error.message || 'Could not access chat history.' })
   }
 }

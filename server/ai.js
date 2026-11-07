@@ -36,7 +36,7 @@ const MAX_IMAGE_BYTES = 1.5 * 1024 * 1024
 
 function cleanMessages(input) {
   if (!Array.isArray(input) || input.length === 0) {
-    const error = new Error('Pesan chat tidak boleh kosong.')
+    const error = new Error('Chat messages cannot be empty.')
     error.status = 400
     throw error
   }
@@ -44,12 +44,12 @@ function cleanMessages(input) {
   let totalImageBytes = 0
   return input.slice(-MAX_MESSAGES).map((message) => {
     if (!message || !['user', 'assistant'].includes(message.role) || typeof message.content !== 'string') {
-      const error = new Error('Format pesan tidak valid.')
+      const error = new Error('Invalid message format.')
       error.status = 400
       throw error
     }
     if (message.content.length > MAX_MESSAGE_CHARS) {
-      const error = new Error('Pesan terlalu panjang. Batasi hingga 100.000 karakter per pesan.')
+      const error = new Error('Message is too long. Limit each message to 100,000 characters.')
       error.status = 413
       throw error
     }
@@ -60,19 +60,19 @@ function cleanMessages(input) {
         if (!attachment || typeof attachment.dataUrl !== 'string') return null
         const match = attachment.dataUrl.match(/^data:(image\/(?:png|jpeg|webp|gif));base64,([A-Za-z0-9+/=]+)$/)
         if (!match) {
-          const error = new Error('Lampiran gambar tidak valid. Gunakan PNG, JPG, WEBP, atau GIF.')
+          const error = new Error('Invalid image attachment. Use PNG, JPG, WEBP, or GIF.')
           error.status = 400
           throw error
         }
         const bytes = Math.floor(match[2].length * 0.75)
         totalImageBytes += bytes
         if (bytes > MAX_IMAGE_BYTES) {
-          const error = new Error('Ukuran gambar maksimal 2 MB per file.')
+          const error = new Error('Each image file must be no larger than 2 MB.')
           error.status = 413
           throw error
         }
         if (totalImageBytes > 1.5 * 1024 * 1024) {
-          const error = new Error('Total gambar dalam satu pesan tidak boleh melebihi 1,5 MB.')
+          const error = new Error('The total image size per message cannot exceed 1.5 MB.')
           error.status = 413
           throw error
         }
@@ -133,7 +133,7 @@ async function parseProviderError(response, provider) {
   } catch {
     detail = ''
   }
-  const fallback = `${provider} gagal memproses permintaan (HTTP ${response.status}).`
+  const fallback = `${provider} failed to process the request (HTTP ${response.status}).`
   const error = new Error(typeof detail === 'string' && detail ? detail.slice(0, 500) : fallback)
   error.status = response.status === 429 ? 429 : (response.status >= 500 ? 502 : 400)
   throw error
@@ -202,13 +202,13 @@ async function callAnthropic(model, messages) {
 export async function generateReply(modelId, inputMessages, { isPro = false } = {}) {
   const config = MODEL_CONFIG[modelId]
   if (!config) {
-    const error = new Error('Model tidak dikenali. Pilih model yang tersedia di menu.')
+    const error = new Error('Unknown model. Choose an available model from the menu.')
     error.status = 400
     throw error
   }
 
   if (config.pro && isPro !== true) {
-    const error = new Error('Model GPT dan Claude hanya tersedia untuk akun Perfectly Pro.')
+    const error = new Error('GPT and Claude models are available to Perfectly Pro accounts only.')
     error.status = 403
     throw error
   }
@@ -217,14 +217,14 @@ export async function generateReply(modelId, inputMessages, { isPro = false } = 
   if (!apiKey) {
     const envName = config.provider === 'ollama' ? 'OLLAMA_API_KEY'
       : config.provider === 'openai' ? 'OPENAI_API_KEY' : 'ANTHROPIC_API_KEY'
-    const error = new Error(`API key untuk ${config.provider} belum diatur. Tambahkan ${envName} di Vercel → Settings → Environment Variables.`)
+    const error = new Error(`The API key for ${config.provider} is not configured. Add ${envName} in Vercel → Settings → Environment Variables.`)
     error.status = 503
     throw error
   }
 
   const messages = cleanMessages(inputMessages)
   if (modelId === 'beam' && messages.some((message) => message.attachments?.length)) {
-    const error = new Error('Beam saat ini menerima input teks. Untuk menganalisis gambar, pilih Gemma 4, GPT, atau Claude.')
+    const error = new Error('Beam currently supports text input only. To analyze images, choose Gemma 4, GPT, or Claude.')
     error.status = 400
     throw error
   }
@@ -235,7 +235,7 @@ export async function generateReply(modelId, inputMessages, { isPro = false } = 
   if (config.provider === 'anthropic') content = await callAnthropic(model, messages)
 
   if (!content.trim()) {
-    const error = new Error('Model mengembalikan respons kosong. Coba kirim ulang atau pilih model lain.')
+    const error = new Error('The model returned an empty response. Try sending your message again or choose another model.')
     error.status = 502
     throw error
   }

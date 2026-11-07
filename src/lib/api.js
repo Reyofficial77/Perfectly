@@ -1,8 +1,8 @@
 async function request(url, options = {}) {
   const response = await fetch(url, { credentials: 'same-origin', ...options })
   const payload = await response.json().catch(() => null)
-  if (!payload) throw new Error('Server mengirim respons yang tidak valid. Coba lagi.')
-  if (!response.ok) throw new Error(payload.error || `Request gagal (${response.status}).`)
+  if (!payload) throw new Error('The server returned an invalid response. Please try again.')
+  if (!response.ok) throw new Error(payload.error || `Request failed (${response.status}).`)
   return payload
 }
 

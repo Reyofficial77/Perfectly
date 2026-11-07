@@ -17,6 +17,6 @@ export default async function handler(req, res) {
   } catch (error) {
     const status = Number.isInteger(error.status) ? error.status : 500
     if (status >= 500) console.error('[Perfectly API]', error)
-    return res.status(status).json({ error: error.message || 'Terjadi kesalahan pada server.' })
+    return res.status(status).json({ error: error.message || 'A server error occurred.' })
   }
 }

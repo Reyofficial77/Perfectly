@@ -1,127 +1,128 @@
 # Perfectly
 
-Starter project **React + Vite** untuk workspace AI coding Perfectly, berdasarkan HTML referensi dan icon yang kamu unggah.
+> **Project root:** All application files are located directly in this directory: `package.json`, `index.html`, `src/`, `api/`, and `server/`. When importing this repository into Vercel, leave **Root Directory** empty or set it to the repository root (`./`). Do not select the old nested directory `perfectly-work/perfectly`.
 
-## Fitur
+Perfectly is an AI coding workspace starter built with **React + Vite**, based on the supplied HTML reference and app icon.
 
-- Landing page responsive, mobile-first, animasi ringan, dan tampilan monokrom.
-- Dark mode tetap menjadi tema default; tersedia toggle Dark/Light di landing page, login/sign up, dan workspace. Pilihan tema disimpan di browser dan dipertahankan saat halaman dibuka kembali.
-- Login dan sign up email/password, Google OAuth, dan GitHub OAuth.
-- Autentikasi, akun, session, dan riwayat chat disimpan di **Neon PostgreSQL**.
-- Password email disimpan sebagai hash `scrypt`; session memakai token acak yang disimpan dalam bentuk SHA-256 hash dan cookie `HttpOnly`.
-- Workspace chat dinamis di `/chat/{25-karakter-acak}` dengan chat bubble user/AI yang mendukung Markdown dan GitHub Flavored Markdown, loading indicator, riwayat lintas perangkat, logout, dan pemilih model. `/app` otomatis membuka chat baru.
-- Upload gambar PNG/JPG/WEBP/GIF serta file teks/kode seperti TXT, MD, JSON, CSV, JS/TS, HTML, CSS, Python, Java, Go, Rust, SQL, LOG, YAML, XML, dan SH.
-- Backend serverless Vercel di `/api/auth`, `/api/auth/callback/*`, `/api/chat`, `/api/chats`, dan `/api/health`.
-- Integrasi Ollama Cloud untuk Beam dan Gemma 4, OpenAI API untuk GPT, serta Anthropic API untuk Claude. Model default adalah Beam.
-- API key database dan AI hanya dibaca di backend. Tidak ada secret yang dikirim ke browser.
+## Features
 
-## Tema tampilan
+- Responsive, mobile-first landing page with subtle animations and a monochrome interface.
+- Dark mode is the default theme. A Dark/Light toggle is available on the landing page, login, sign-up, and workspace. The selected theme is saved in the browser and restored on future visits.
+- Email/password authentication, Google OAuth, and GitHub OAuth.
+- Authentication, accounts, sessions, and chat history are stored in **Neon PostgreSQL**.
+- Email passwords are hashed with `scrypt`. Session tokens are stored as SHA-256 hashes and delivered through `HttpOnly` cookies.
+- Dynamic chat workspace at `/chat/{25-character-random-id}` with Markdown and GitHub Flavored Markdown support for user and assistant messages, loading indicators, cross-device history, logout, and model selection. `/app` automatically opens a new chat.
+- PNG/JPG/WEBP/GIF image uploads and text/code files including TXT, MD, JSON, CSV, JS/TS, HTML, CSS, Python, Java, Go, Rust, SQL, LOG, YAML, XML, and SH.
+- Vercel serverless backend endpoints at `/api/auth`, `/api/auth/callback/*`, `/api/chat`, `/api/chats`, and `/api/health`.
+- Ollama Cloud integration for Beam and Gemma 4, OpenAI API integration for GPT, and Anthropic API integration for Claude. Beam is the default model.
+- Database credentials and AI API keys are only read by the backend. No secrets are exposed to the browser.
 
-Perfectly dibuka dalam **dark mode** secara default. Gunakan tombol ikon matahari/bulan di bagian atas halaman untuk berpindah ke light mode atau kembali ke dark mode. Pilihan disimpan pada `localStorage` dengan key `perfectly.theme`, sehingga berlaku konsisten di landing page, login, sign up, dan workspace pada browser yang sama. Composer memakai model Beam secara default, input bertambah tinggi saat prompt panjang, Enter mengirim prompt, dan Shift+Enter membuat baris baru.
+## Appearance and theme
 
+Perfectly starts in **dark mode** by default. Use the sun/moon icon at the top of the page to switch to light mode or return to dark mode. The selection is stored in `localStorage` under the `perfectly.theme` key, so it remains consistent across the landing page, login, sign-up, and workspace in the same browser. Beam is selected by default. The composer expands as the prompt grows; press `Enter` to send and `Shift+Enter` to insert a new line.
 
-## Chat routes dan composer
+## Chat routes and composer
 
-Setiap chat baru memakai URL `/chat/{id}`. ID tersebut berisi tepat **25 karakter alfanumerik** dan dibuat secara acak di browser ketika prompt dikirim. Contoh bentuk URL: `/chat/Ab3dEf7GhJkLmN2pQr5StUvWx`. Tabel Neon mempertahankan UUID internal dan memakai kolom unik `public_id` untuk URL, sehingga data percakapan lama tidak perlu mengubah primary key.
+Each new chat uses the `/chat/{id}` URL. The ID contains exactly **25 alphanumeric characters** and is generated randomly in the browser when a prompt is submitted. Example: `/chat/Ab3dEf7GhJkLmN2pQr5StUvWx`. Neon retains its internal UUID and uses a unique `public_id` column for the URL, so existing conversation primary keys do not need to change.
 
-Composer dibuat ringkas seperti input chat modern: tinggi input bertambah mengikuti teks sampai batas yang nyaman, `Enter` mengirim pesan, sedangkan `Shift+Enter` menambah baris. Tombol lampiran menerima file gambar dan teks/kode, termasuk gambar yang di-paste dari clipboard. Markdown dan GitHub Flavored Markdown ditampilkan pada bubble user dan AI. Model awal adalah **Beam**; model dapat diganti melalui selector di samping tombol kirim. Tombol Cowork ditampilkan sebagai pratinjau dan belum menjalankan agent desktop.
+The composer stays compact like a modern chat input and grows with the text up to a comfortable limit. `Enter` sends a message, while `Shift+Enter` adds a line break. The attachment button accepts image and text/code files, including images pasted from the clipboard. Markdown and GitHub Flavored Markdown are rendered in both user and assistant bubbles. **Beam** is the default model and can be changed using the selector beside the send button. The Cowork button is a preview only; it does not run a desktop agent.
 
-## 1. Instalasi dan development
+## 1. Installation and development
 
 ```bash
 npm install
 cp .env.example .env.local
 ```
 
-Di Windows PowerShell, gunakan `Copy-Item .env.example .env.local`.
+On Windows PowerShell, use `Copy-Item .env.example .env.local`.
 
-Frontend Vite saja:
+Run the Vite frontend only:
 
 ```bash
 npm run dev
 ```
 
-Frontend + Vercel serverless API:
+Run the frontend with Vercel serverless API functions:
 
 ```bash
 npm run dev:vercel
 ```
 
-Build frontend:
+Build the frontend:
 
 ```bash
 npm run build
 ```
 
-Gunakan `npm run dev:vercel` untuk menguji login, riwayat chat, dan endpoint API lokal. Vite dev server biasa tidak menjalankan file function pada folder `api/`.
+Use `npm run dev:vercel` to test login, chat history, and local API endpoints. The standard Vite dev server does not execute functions in the `api/` directory.
 
-## 2. Menyiapkan Neon PostgreSQL
+## 2. Configure Neon PostgreSQL
 
-1. Buat project di [Neon Console](https://console.neon.tech/).
-2. Pilih database dan role yang akan dipakai aplikasi.
-3. Klik **Connect**, pilih branch/database/role, lalu salin connection string. Untuk Vercel gunakan pooled connection string bila tersedia.
-4. Masukkan connection string sebagai `DATABASE_URL` di `.env.local` dan Vercel → Project → Settings → Environment Variables.
-5. Jangan memberi prefix `VITE_` pada `DATABASE_URL` dan jangan commit file `.env.local`.
+1. Create a project in the [Neon Console](https://console.neon.tech/).
+2. Select the database and role that the application will use.
+3. Click **Connect**, select the branch/database/role, and copy the connection string. For Vercel, use a pooled connection string when available.
+4. Set the connection string as `DATABASE_URL` in `.env.local` and in Vercel → Project → Settings → Environment Variables.
+5. Do not add a `VITE_` prefix to `DATABASE_URL`, and never commit `.env.local`.
 
-Contoh format (bukan kredensial sungguhan):
+Example format (not a real credential):
 
 ```env
 DATABASE_URL=postgresql://USER:PASSWORD@HOST/DBNAME?sslmode=require
 ```
 
-Tabel dibuat otomatis ketika API pertama kali dipanggil. Bila ingin membuatnya manual, buka Neon SQL Editor dan jalankan isi file `neon-schema.sql` di root project. Skema ini membuat:
+Tables are created automatically when an API endpoint is called for the first time. To create them manually, open the Neon SQL Editor and run `neon-schema.sql` from the project root. The schema creates:
 
-- `perfectly_users` — akun email, password hash, dan profil.
-- `perfectly_oauth_accounts` — identitas Google/GitHub yang terhubung ke akun.
-- `perfectly_sessions` — session login yang memiliki masa berlaku 30 hari.
-- `perfectly_conversations` — riwayat chat dalam kolom JSONB, terikat ke pemilik akun. Kolom `public_id` menyimpan ID URL alfanumerik 25 karakter; UUID internal tetap dipakai sebagai primary key.
+- `perfectly_users` — email accounts, password hashes, and profiles.
+- `perfectly_oauth_accounts` — Google/GitHub identities linked to accounts.
+- `perfectly_sessions` — login sessions with a 30-day lifetime.
+- `perfectly_conversations` — chat history stored as JSONB and linked to its owner. The `public_id` column stores the 25-character alphanumeric URL ID; the internal UUID remains the primary key.
 
-Riwayat chat dipisahkan berdasarkan `user_id`, jadi satu akun tidak dapat membaca percakapan akun lain melalui API.
+Chat history is scoped by `user_id`, so one account cannot access another account's conversations through the API.
 
 ## 3. Email/password authentication
 
-Tidak perlu layanan auth eksternal. Endpoint backend menangani registrasi dan login. Password minimal 8 dan maksimal 128 karakter, di-hash dengan Node.js `scrypt`, lalu session token acak disimpan dalam bentuk hash di Neon. Browser hanya menerima cookie `HttpOnly`, `SameSite=Lax`, dan `Secure` saat berjalan melalui HTTPS.
+No external authentication service is required. The backend handles registration and login. Passwords must be 8–128 characters long and are hashed with Node.js `scrypt`. Random session tokens are stored as hashes in Neon. The browser only receives an `HttpOnly`, `SameSite=Lax` cookie with the `Secure` flag enabled over HTTPS.
 
-**Catatan:** versi ini belum mengirim email verifikasi atau reset password. Untuk production publik, tambahkan layanan email/transaksi untuk verifikasi email dan pemulihan password sebelum membuka pendaftaran luas.
+**Note:** This version does not send email verification or password-reset emails. For a public production launch, add an email delivery service for email verification and password recovery before opening registration widely.
 
 ## 4. Google OAuth
 
-1. Buat OAuth Client ID tipe **Web application** di [Google Cloud Console](https://console.cloud.google.com/apis/credentials).
-2. Tambahkan Authorized redirect URI persis seperti berikut:
+1. Create an OAuth Client ID with the **Web application** type in the [Google Cloud Console](https://console.cloud.google.com/apis/credentials).
+2. Add the following exact Authorized redirect URIs:
    - `https://YOUR-DOMAIN/api/auth/callback/google`
-   - `http://localhost:3000/api/auth/callback/google` untuk pengujian lokal opsional.
-3. Tambahkan `GOOGLE_CLIENT_ID` dan `GOOGLE_CLIENT_SECRET` ke `.env.local` dan environment Vercel.
-4. Scope yang diminta aplikasi: `openid email profile`.
+   - `http://localhost:3000/api/auth/callback/google` for optional local testing.
+3. Add `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` to `.env.local` and the Vercel environment variables.
+4. The application requests these scopes: `openid email profile`.
 
-Google mensyaratkan redirect URI sama persis dengan yang terdaftar. Sesuaikan domain jika menggunakan custom domain.
+Google requires the redirect URI to match the registered value exactly. Update the domain if you use a custom domain.
 
 ## 5. GitHub OAuth
 
-1. Buka GitHub → Settings → Developer settings → OAuth Apps → New OAuth App.
-2. Isi Homepage URL dengan domain aplikasi.
-3. Isi Authorization callback URL dengan URL persis berikut:
+1. Open GitHub → Settings → Developer settings → OAuth Apps → New OAuth App.
+2. Set the Homepage URL to your application domain.
+3. Set the Authorization callback URL to one of these exact URLs:
    - `https://YOUR-DOMAIN/api/auth/callback/github`
-   - `http://localhost:3000/api/auth/callback/github` untuk pengujian lokal opsional.
-4. Masukkan `GITHUB_CLIENT_ID` dan `GITHUB_CLIENT_SECRET` ke `.env.local` dan Vercel.
-5. Aplikasi meminta scope `read:user` dan `user:email`; akun GitHub harus memiliki email terverifikasi.
+   - `http://localhost:3000/api/auth/callback/github` for optional local testing.
+4. Add `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET` to `.env.local` and Vercel.
+5. The application requests the `read:user` and `user:email` scopes. The GitHub account must have a verified email address.
 
-Jangan menaruh client secret Google/GitHub di variable `VITE_` atau source code frontend.
+Never put Google/GitHub client secrets in a `VITE_` variable or frontend source code.
 
-## 6. APP_URL dan callback
+## 6. APP_URL and callbacks
 
-Atur `APP_URL` ke origin final, tanpa slash di akhir, misalnya:
+Set `APP_URL` to the final origin, without a trailing slash. For example:
 
 ```env
 APP_URL=https://YOUR-DOMAIN
 ```
 
-Untuk deployment Vercel, sebaiknya isi variable ini secara eksplisit agar callback OAuth selalu menggunakan domain yang benar. Untuk development lokal dengan `vercel dev`, gunakan `http://localhost:3000`.
+For Vercel deployments, explicitly set this variable so OAuth callbacks always use the correct domain. For local development with `vercel dev`, use `http://localhost:3000`.
 
-## 7. Menyiapkan API key AI
+## 7. Configure AI API keys
 
-Tambahkan API key sebagai environment variable server-side:
+Add API keys as server-side environment variables:
 
-| Pilihan model di UI | Provider | Model ID default | Environment variable |
+| Model in UI | Provider | Default model ID | Environment variable |
 |---|---|---|---|
 | Beam | Ollama Cloud | `beam` | `OLLAMA_API_KEY` |
 | Gemma 4 | Ollama Cloud | `gemma4:31b` | `OLLAMA_API_KEY` |
@@ -130,54 +131,74 @@ Tambahkan API key sebagai environment variable server-side:
 | Claude Sonnet 5.5 | Anthropic | `claude-sonnet-5-5` | `ANTHROPIC_API_KEY` |
 | Claude Opus 5.5 | Anthropic | `claude-opus-5-5` | `ANTHROPIC_API_KEY` |
 
-- **Ollama Cloud:** backend memanggil `https://ollama.com/api/chat`.
-- **OpenAI:** backend menggunakan `https://api.openai.com/v1/responses`.
-- **Anthropic:** backend menggunakan `https://api.anthropic.com/v1/messages`.
+- **Ollama Cloud:** the backend calls `https://ollama.com/api/chat`.
+- **OpenAI:** the backend uses `https://api.openai.com/v1/responses`.
+- **Anthropic:** the backend uses `https://api.anthropic.com/v1/messages`.
 
-Langganan ChatGPT bukan API key OpenAI Platform. Langganan Claude Pro/Max juga bukan API key Anthropic; penggunaan API diatur dan ditagih terpisah.
+A ChatGPT subscription is not an OpenAI Platform API key. A Claude Pro/Max subscription is also not an Anthropic API key; API usage is managed and billed separately.
 
-Model ID dapat disesuaikan melalui override opsional di `.env.example`.
+Model IDs can be customized using the optional overrides in `.env.example`.
 
-## 8. Deploy ke Vercel
+## 8. Deploy to Vercel
 
-1. Push folder project ini ke GitHub atau import repository ke Vercel.
-2. Framework Preset: **Vite**.
-3. Build Command: `npm run build`.
-4. Output Directory: `dist`.
-5. Tambahkan environment variables berikut:
+1. Push the contents of this project folder (not its parent folder) to the root of a GitHub repository, or import the repository into Vercel.
+2. In Vercel → Settings → Build and Deployment, set **Root Directory** to the repository root (`./` or leave it empty).
+3. Set the Framework Preset to **Vite**. `vercel.json` configures `npm run build`, `npm install`, and the `dist` output directory.
+4. Make sure `api/`, `server/`, `src/`, and `public/`, along with `package.json`, `index.html`, and `vercel.json`, are all located directly in the project root.
+5. Add these environment variables:
    - `DATABASE_URL`
    - `APP_URL`
    - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`
    - `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`
    - `OLLAMA_API_KEY`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`
-   - Model ID override bila diperlukan.
-6. Pastikan callback URI pada Google dan GitHub menggunakan domain deployment yang sama dengan `APP_URL`.
-7. Deploy/redeploy setelah environment variable ditambahkan.
+   - Optional model ID overrides, if needed.
+6. Make sure the Google and GitHub callback URLs use the same deployment domain as `APP_URL`.
+7. Deploy or redeploy after adding the environment variables.
 
-Vercel menjalankan function dari folder `api/`. `vercel.json` mengatur durasi function dan fallback SPA ke `index.html`.
+Vercel runs serverless functions from the `api/` directory. `vercel.json` configures the Vite build, `dist` output, function duration, and fallback only for SPA routes (`/chat/*`, `/login`, `/signup`, `/app`, and `/auth/callback`). The SPA fallback does not rewrite `/api/*` endpoints.
 
 ## 9. Database health check
 
-Buka `/api/health` pada deployment. Response menampilkan status koneksi Neon, status konfigurasi provider AI, dan daftar model. Response tidak pernah mengembalikan nilai connection string atau API key.
+Open `/api/health` on the deployed site. The response shows the Neon connection status, AI provider configuration status, and the model list. It never returns the database connection string or API key values.
 
-## Batasan versi ini
+## Current limitations
 
-- Belum tersedia verifikasi email, reset password, MFA, dan rate limiting khusus login. Tambahkan mekanisme tersebut sebelum membuka layanan untuk penggunaan publik berskala besar.
-- Riwayat chat disimpan di Neon dan dapat dimuat lintas browser/perangkat setelah login.
-- Lampiran gambar hanya dikirim ke provider AI ketika request berlangsung; riwayat database hanya menyimpan nama dan tipe lampiran, bukan binary gambar.
-- Mode Cowork masih berupa tombol pratinjau dan belum menjalankan agent desktop. PDF parsing, impor repository, akses shell/terminal, operasi Git, dan pengubahan file otomatis belum tersedia. Assistant tidak boleh dianggap telah menjalankan command atau mengubah repository.
-- Belum ada sistem paket berbayar / PRO.
-- Gambar dibatasi maksimal 1,5 MB per file dan total 1,5 MB per pesan. Format yang diterima: PNG, JPG, WEBP, GIF. File teks/kode dibatasi 80.000 karakter per file.
+- Email verification, password reset, MFA, and dedicated login rate limiting are not included. Add these protections before opening the service to a large public audience.
+- Chat history is stored in Neon and can be loaded across browsers/devices after login.
+- Image attachments are sent to the AI provider during the request. The database history stores attachment names and MIME types, not image binaries.
+- Cowork is a preview button and does not run a desktop agent. PDF parsing, repository import, shell/terminal access, Git operations, and automatic file editing are not available. The assistant must not be assumed to have executed commands or modified a repository.
+- Free/Pro status is stored in `perfectly_users.is_pro`. Pro access is currently granted manually through the Neon SQL Editor; no payment gateway is implemented.
+- Images are limited to 1.5 MB per file and 1.5 MB total per message. Accepted formats: PNG, JPG, WEBP, GIF. Text/code files are limited to 80,000 characters per file.
 
-## Pemeriksaan
+## Checks
 
 ```bash
 npm run build
 npm run lint
 ```
 
-Hasil build dibuat di `dist/`.
+The production build is generated in `dist/`.
 
-## Akun Perfectly Pro
+## Perfectly Pro accounts
 
-Akun baru otomatis berstatus Free. Model GPT dan Claude hanya dapat digunakan oleh akun dengan `perfectly_users.is_pro = TRUE`. Jalankan `UPDATE perfectly_users SET is_pro = TRUE WHERE email = 'user@example.com';` di Neon SQL Editor untuk memberikan akses Pro. Payment gateway belum diimplementasikan.
+New accounts are Free by default. GPT and Claude models are available only when `perfectly_users.is_pro = TRUE`. Run the following query in the Neon SQL Editor to grant Pro access:
+
+```sql
+UPDATE perfectly_users
+SET is_pro = TRUE
+WHERE email = 'user@example.com';
+```
+
+A payment gateway has not been implemented.
+
+## 10. Troubleshooting: blank or black screen
+
+If the page only shows a dark background with no UI:
+
+1. Make sure the Vercel **Root Directory** points to the repository root, not an old nested folder. The project root must directly contain `package.json` and `index.html`.
+2. Open Vercel → Deployments → the latest deployment → **Build Logs**. Confirm that `npm install` and `npm run build` completed successfully.
+3. Confirm that the output directory is `dist` and that the build contains `index.html` and an `assets/` folder.
+4. Open `https://YOUR-DOMAIN/api/health` to check the backend and Neon connection. This endpoint checks the backend, not React rendering.
+5. Hard-refresh the browser (`Ctrl + Shift + R`). If the bundle still fails to load, the page should display a startup/error message instead of remaining blank.
+
+If the build log does not show `vite build` or no `dist` folder is created, Vercel may still be using an outdated Root Directory or build configuration.

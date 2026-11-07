@@ -53,7 +53,7 @@ function safeNextPath(value) {
 function requestOrigin(req) {
   if (process.env.APP_URL) return process.env.APP_URL.replace(/\/$/, '')
   const host = req.headers['x-forwarded-host'] || req.headers.host || process.env.VERCEL_URL
-  if (!host) throw new Error('Tidak dapat menentukan APP_URL untuk OAuth.')
+  if (!host) throw new Error('Could not determine APP_URL for OAuth.')
   const hostname = String(host).split(',')[0].trim()
   const proto = String(req.headers['x-forwarded-proto'] || (hostname.includes('localhost') ? 'http' : 'https')).split(',')[0].trim()
   return `${proto}://${hostname}`
@@ -82,7 +82,7 @@ export async function findSessionUser(req) {
 export async function authenticateRequest(req) {
   const user = await findSessionUser(req)
   if (!user) {
-    const error = new Error('Sesi login tidak ditemukan atau sudah kedaluwarsa. Silakan login kembali.')
+    const error = new Error('Your session could not be found or has expired. Please sign in again.')
     error.status = 401
     throw error
   }
@@ -118,12 +118,12 @@ export async function registerWithEmail(emailInput, password, nameInput = '') {
   const email = String(emailInput || '').trim().toLowerCase()
   const name = String(nameInput || '').trim().slice(0, 80)
   if (!EMAIL_PATTERN.test(email) || email.length > 254) {
-    const error = new Error('Masukkan alamat email yang valid.')
+    const error = new Error('Enter a valid email address.')
     error.status = 400
     throw error
   }
   if (typeof password !== 'string' || password.length < 8 || password.length > 128) {
-    const error = new Error('Password harus berisi 8–128 karakter.')
+    const error = new Error('Password must be 8–128 characters long.')
     error.status = 400
     throw error
   }
@@ -131,7 +131,7 @@ export async function registerWithEmail(emailInput, password, nameInput = '') {
   const sql = await ensureSchema()
   const existing = await sql`SELECT id FROM perfectly_users WHERE email = ${email} LIMIT 1`
   if (existing.length) {
-    const error = new Error('Email sudah terdaftar. Silakan login.')
+    const error = new Error('This email is already registered. Please sign in.')
     error.status = 409
     throw error
   }
@@ -151,7 +151,7 @@ export async function registerWithEmail(emailInput, password, nameInput = '') {
 export async function loginWithEmail(emailInput, password) {
   const email = String(emailInput || '').trim().toLowerCase()
   if (typeof password !== 'string' || !password.length) {
-    const error = new Error('Email atau password tidak cocok.')
+    const error = new Error('The email or password is incorrect.')
     error.status = 401
     throw error
   }
@@ -159,20 +159,20 @@ export async function loginWithEmail(emailInput, password) {
   const rows = await sql`SELECT id, email, name, avatar_url, is_pro, password_hash FROM perfectly_users WHERE email = ${email} LIMIT 1`
   const user = rows[0]
   if (!user?.password_hash) {
-    const error = new Error('Email atau password tidak cocok. Jika mendaftar melalui Google/GitHub, gunakan tombol tersebut.')
+    const error = new Error('The email or password is incorrect. If you registered with Google or GitHub, use that sign-in button.')
     error.status = 401
     throw error
   }
   const [scheme, salt, storedHex] = user.password_hash.split('$')
   if (scheme !== 'scrypt' || !salt || !storedHex) {
-    const error = new Error('Data password tidak valid. Silakan hubungi administrator.')
+    const error = new Error('The stored password data is invalid. Please contact the administrator.')
     error.status = 500
     throw error
   }
   const derived = Buffer.from(await scrypt(password, salt, 64, { N: 16384, r: 8, p: 1, maxmem: 64 * 1024 * 1024 }))
   const stored = Buffer.from(storedHex, 'hex')
   if (stored.length !== derived.length || !timingSafeEqual(stored, derived)) {
-    const error = new Error('Email atau password tidak cocok.')
+    const error = new Error('The email or password is incorrect.')
     error.status = 401
     throw error
   }
@@ -188,7 +188,7 @@ export function createOAuthUrl(req, provider, nextPath) {
   if (provider === 'google') {
     const clientId = process.env.GOOGLE_CLIENT_ID
     if (!clientId || !process.env.GOOGLE_CLIENT_SECRET) {
-      const error = new Error('Google OAuth belum dikonfigurasi. Isi GOOGLE_CLIENT_ID dan GOOGLE_CLIENT_SECRET.')
+      const error = new Error('Google OAuth is not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.')
       error.status = 503
       throw error
     }
@@ -204,14 +204,14 @@ export function createOAuthUrl(req, provider, nextPath) {
   } else if (provider === 'github') {
     const clientId = process.env.GITHUB_CLIENT_ID
     if (!clientId || !process.env.GITHUB_CLIENT_SECRET) {
-      const error = new Error('GitHub OAuth belum dikonfigurasi. Isi GITHUB_CLIENT_ID dan GITHUB_CLIENT_SECRET.')
+      const error = new Error('GitHub OAuth is not configured. Set GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET.')
       error.status = 503
       throw error
     }
     const query = new URLSearchParams({ client_id: clientId, redirect_uri: redirectUri, scope: 'read:user user:email', state })
     url = `https://github.com/login/oauth/authorize?${query}`
   } else {
-    const error = new Error('Provider OAuth tidak didukung.')
+    const error = new Error('This OAuth provider is not supported.')
     error.status = 400
     throw error
   }
@@ -238,13 +238,13 @@ async function exchangeGoogleCode(code, redirectUri) {
     }),
   })
   const tokenData = await tokenResponse.json().catch(() => ({}))
-  if (!tokenResponse.ok || !tokenData.access_token) throw new Error('Google tidak dapat memverifikasi proses login.')
+  if (!tokenResponse.ok || !tokenData.access_token) throw new Error('Google could not verify the sign-in request.')
   const profileResponse = await fetch('https://openidconnect.googleapis.com/v1/userinfo', {
     headers: { Authorization: `Bearer ${tokenData.access_token}` },
   })
   const profile = await profileResponse.json().catch(() => ({}))
   if (!profileResponse.ok || !profile.sub || !profile.email || profile.email_verified !== true) {
-    throw new Error('Google tidak memberikan email terverifikasi.')
+    throw new Error('Google did not provide a verified email address.')
   }
   return { provider: 'google', providerUserId: String(profile.sub), email: profile.email, name: profile.name || '', avatarUrl: profile.picture || '' }
 }
@@ -256,7 +256,7 @@ async function exchangeGitHubCode(code, redirectUri) {
     body: JSON.stringify({ client_id: process.env.GITHUB_CLIENT_ID, client_secret: process.env.GITHUB_CLIENT_SECRET, code, redirect_uri: redirectUri }),
   })
   const tokenData = await tokenResponse.json().catch(() => ({}))
-  if (!tokenResponse.ok || !tokenData.access_token) throw new Error('GitHub tidak dapat memverifikasi proses login.')
+  if (!tokenResponse.ok || !tokenData.access_token) throw new Error('GitHub could not verify the sign-in request.')
   const headers = { Authorization: `Bearer ${tokenData.access_token}`, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' }
   const [profileResponse, emailsResponse] = await Promise.all([
     fetch('https://api.github.com/user', { headers }),
@@ -265,7 +265,7 @@ async function exchangeGitHubCode(code, redirectUri) {
   const profile = await profileResponse.json().catch(() => ({}))
   const emails = await emailsResponse.json().catch(() => [])
   const verifiedEmail = Array.isArray(emails) ? emails.find((entry) => entry.primary && entry.verified)?.email || emails.find((entry) => entry.verified)?.email : null
-  if (!profileResponse.ok || !profile.id || !verifiedEmail) throw new Error('Akun GitHub harus memiliki email terverifikasi.')
+  if (!profileResponse.ok || !profile.id || !verifiedEmail) throw new Error('The GitHub account must have a verified email address.')
   return { provider: 'github', providerUserId: String(profile.id), email: verifiedEmail, name: profile.name || profile.login || '', avatarUrl: profile.avatar_url || '' }
 }
 

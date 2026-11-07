@@ -5,7 +5,7 @@ let schemaPromise
 
 export function getSql() {
   if (!process.env.DATABASE_URL) {
-    const error = new Error('Neon database belum dikonfigurasi. Tambahkan DATABASE_URL di Vercel → Settings → Environment Variables.')
+    const error = new Error('The Neon database is not configured. Add DATABASE_URL in Vercel → Settings → Environment Variables.')
     error.status = 503
     throw error
   }
@@ -88,6 +88,6 @@ export async function checkDatabase() {
     const rows = await sql`SELECT NOW() AS server_time`
     return { configured: true, connected: true, serverTime: rows[0]?.server_time || null }
   } catch (error) {
-    return { configured: Boolean(process.env.DATABASE_URL), connected: false, error: error.status === 503 ? error.message : 'Neon database tidak dapat dihubungi.' }
+    return { configured: Boolean(process.env.DATABASE_URL), connected: false, error: error.status === 503 ? error.message : 'Could not connect to the Neon database.' }
   }
 }

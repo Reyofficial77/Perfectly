@@ -13,12 +13,63 @@
       try {
         const savedTheme = localStorage.getItem('perfectly.theme');
         document.documentElement.dataset.theme = savedTheme === 'light' ? 'light' : 'dark';
-      } catch { document.documentElement.dataset.theme = 'dark'; }
+      } catch {
+        document.documentElement.dataset.theme = 'dark';
+      }
+
+      // If the app bundle cannot load, show a useful message instead of a blank page.
+      window.__PERFECTLY_SHOW_BOOT_ERROR__ = function (message) {
+        const root = document.getElementById('root');
+        if (!root || root.dataset.appMounted === 'true') return;
+        const card = document.createElement('section');
+        card.className = 'boot-error-card';
+        const title = document.createElement('h1');
+        title.textContent = 'Perfectly could not start';
+        const detail = document.createElement('p');
+        detail.textContent = message || 'The application bundle failed to load.';
+        const hint = document.createElement('p');
+        hint.textContent = 'Check the Vercel deployment build logs. The project root must contain package.json, index.html, src/, and api/. Then redeploy.';
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = 'Reload app';
+        button.addEventListener('click', function () { window.location.reload(); });
+        card.append(title, detail, hint, button);
+        root.replaceChildren(card);
+      };
+      window.addEventListener('error', function (event) {
+        if (event.target && event.target.tagName === 'SCRIPT') {
+          window.__PERFECTLY_SHOW_BOOT_ERROR__('A required JavaScript file could not be loaded. Check the Vercel build output and asset paths.');
+        } else if (event.error) {
+          window.__PERFECTLY_SHOW_BOOT_ERROR__(event.error.message || 'A JavaScript error prevented startup.');
+        }
+      }, true);
+      window.addEventListener('unhandledrejection', function (event) {
+        const reason = event.reason;
+        window.__PERFECTLY_SHOW_BOOT_ERROR__(reason && reason.message ? reason.message : 'An unexpected startup request failed.');
+      });
+      window.addEventListener('vite:preloadError', function () {
+        window.__PERFECTLY_SHOW_BOOT_ERROR__('A deployment asset is missing or cached from another build. Reload the page after redeploying.');
+      });
     </script>
+    <style>
+      :root { color-scheme: dark; background: #0d0d0d; }
+      :root[data-theme="light"] { color-scheme: light; background: #fafafa; }
+      html, body { min-height: 100%; margin: 0; }
+      #root { min-height: 100vh; }
+      .boot-screen { min-height: 100vh; display: grid; place-content: center; justify-items: center; gap: 14px; background: #0d0d0d; color: #f2f2f2; font: 500 14px/1.5 "Plus Jakarta Sans", system-ui, sans-serif; }
+      :root[data-theme="light"] .boot-screen { background: #fafafa; color: #171717; }
+      .boot-mark { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: #f2f2f2; color: #111; font-weight: 800; font-size: 20px; }
+      .boot-error-card { min-height: 100vh; box-sizing: border-box; padding: 32px 22px; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; max-width: 620px; margin: 0 auto; color: #f2f2f2; background: #0d0d0d; font: 14px/1.6 "Plus Jakarta Sans", system-ui, sans-serif; }
+      :root[data-theme="light"] .boot-error-card { color: #171717; background: #fafafa; }
+      .boot-error-card h1 { margin: 0 0 10px; font-size: 25px; }
+      .boot-error-card p { color: #aaa; overflow-wrap: anywhere; }
+      :root[data-theme="light"] .boot-error-card p { color: #666; }
+      .boot-error-card button { margin-top: 14px; padding: 10px 18px; border: 0; border-radius: 999px; background: #f2f2f2; color: #111; font: inherit; cursor: pointer; }
+    </style>
     <title>Perfectly — the coding agent for developers</title>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root"><div class="boot-screen"><div class="boot-mark">P</div><span>Loading Perfectly…</span></div></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

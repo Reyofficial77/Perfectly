@@ -82,7 +82,7 @@ export default function ChatPage() {
     setChatsLoading(true)
     fetchChats()
       .then((payload) => { if (active) setConversations(Array.isArray(payload.conversations) ? payload.conversations : []) })
-      .catch((error) => { if (active) setStatusError(`Tidak dapat memuat riwayat dari Neon: ${error.message}`) })
+      .catch((error) => { if (active) setStatusError(`Could not load chat history from Neon: ${error.message}`) })
       .finally(() => { if (active) setChatsLoading(false) })
     return () => { active = false }
   }, [user.id])
@@ -118,16 +118,16 @@ export default function ChatPage() {
     let queuedBytes = attachments.reduce((sum, item) => sum + (item.dataUrl ? Math.floor(item.dataUrl.length * 0.75) : 0), 0)
     for (const file of files) {
       if (file.size > 1.5 * 1024 * 1024) {
-        setStatusError(`${file.name} melebihi batas 1,5 MB.`)
+        setStatusError(`${file.name} exceeds the 1.5 MB limit.`)
         continue
       }
       if (file.type.startsWith('image/')) {
         if (queuedBytes + file.size > 1.5 * 1024 * 1024) {
-          setStatusError('Total gambar dalam satu pesan tidak boleh melebihi 1,5 MB.')
+          setStatusError('The total image size per message cannot exceed 1.5 MB.')
           continue
         }
         if (!['image/png', 'image/jpeg', 'image/webp', 'image/gif'].includes(file.type)) {
-          setStatusError('Format gambar yang didukung: PNG, JPG, WEBP, dan GIF.')
+          setStatusError('Supported image formats: PNG, JPG, WEBP, and GIF.')
           continue
         }
         const dataUrl = await new Promise((resolve, reject) => {
@@ -142,12 +142,12 @@ export default function ChatPage() {
         const ext = file.name.split('.').pop()?.toLowerCase()
         const supported = ['txt', 'md', 'json', 'csv', 'js', 'jsx', 'ts', 'tsx', 'html', 'css', 'py', 'java', 'go', 'rs', 'sql', 'log', 'yaml', 'yml', 'xml', 'sh']
         if (!supported.includes(ext)) {
-          setStatusError(`File ${file.name} belum didukung. Gunakan file teks/kode atau gambar.`)
+          setStatusError(`File ${file.name} is not supported. Use a text/code file or an image.`)
           continue
         }
         const text = await file.text()
         if (text.length > 80000) {
-          setStatusError(`${file.name} terlalu besar sebagai teks. Maksimal 80.000 karakter.`)
+          setStatusError(`${file.name} is too large as text. The maximum size is 80,000 characters.`)
           continue
         }
         next.push({ name: file.name, type: 'text/plain', text })
@@ -167,7 +167,7 @@ export default function ChatPage() {
   function startVoiceInput() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
     if (!SpeechRecognition) {
-      setStatusError('Voice input belum didukung browser ini. Kamu tetap bisa mengetik prompt.')
+      setStatusError('Voice input is not supported by this browser. You can still type your prompt.')
       return
     }
     if (recognitionRef.current) {
@@ -186,7 +186,7 @@ export default function ChatPage() {
       requestAnimationFrame(() => resizeComposer())
     }
     recognition.onend = () => { recognitionRef.current = null; setVoiceListening(false) }
-    recognition.onerror = () => { recognitionRef.current = null; setVoiceListening(false); setStatusError('Voice input tidak dapat dimulai.') }
+    recognition.onerror = () => { recognitionRef.current = null; setVoiceListening(false); setStatusError('Voice input could not be started.') }
     recognitionRef.current = recognition
     setVoiceListening(true)
     recognition.start()
@@ -237,15 +237,15 @@ export default function ChatPage() {
       const assistantMessage = { id: makeId(), role: 'assistant', content: result.content, model: result.model }
       const completedChat = { ...pendingChat, updatedAt: Date.now(), messages: [...pendingChat.messages, assistantMessage] }
       setConversations((previous) => previous.map((chat) => chat.id === chatId ? completedChat : chat))
-      try { await saveChat(completedChat) } catch (saveError) { setStatusError(`Jawaban berhasil dibuat, tetapi gagal disimpan ke Neon: ${saveError.message}`) }
+      try { await saveChat(completedChat) } catch (saveError) { setStatusError(`The response was generated, but it could not be saved to Neon: ${saveError.message}`) }
     } catch (error) {
       const failedChat = {
         ...pendingChat,
         updatedAt: Date.now(),
-        messages: [...pendingChat.messages, { id: makeId(), role: 'assistant', content: 'I could not complete that request.', error: error.message || 'Terjadi kesalahan.' }],
+        messages: [...pendingChat.messages, { id: makeId(), role: 'assistant', content: 'I could not complete that request.', error: error.message || 'Something went wrong.' }],
       }
       setConversations((previous) => previous.map((chat) => chat.id === chatId ? failedChat : chat))
-      saveChat(failedChat).catch((saveError) => setStatusError(`Gagal menyimpan percakapan ke Neon: ${saveError.message}`))
+      saveChat(failedChat).catch((saveError) => setStatusError(`Could not save the conversation to Neon: ${saveError.message}`))
     } finally {
       setSending(false)
       sendLock.current = false
@@ -285,7 +285,7 @@ export default function ChatPage() {
     event?.stopPropagation()
     setConversations((previous) => previous.filter((chat) => chat.id !== id))
     if (activeId === id) navigate(`/chat/${createChatId()}`, { replace: true })
-    try { await deleteChat(id) } catch (error) { setStatusError(`Gagal menghapus percakapan: ${error.message}`) }
+    try { await deleteChat(id) } catch (error) { setStatusError(`Could not delete the conversation: ${error.message}`) }
   }
 
 
@@ -324,7 +324,7 @@ export default function ChatPage() {
           {statusError && <div className="composer-alert">{statusError}<button type="button" onClick={() => setStatusError('')}><X size={13} /></button></div>}
           <div className="workspace-composer">
             {attachments.length > 0 && <div className="attachment-strip">{attachments.map((attachment, index) => <div className="attachment-pill" key={`${attachment.name}-${index}`}>{attachment.type.startsWith('image/') ? <FileImage size={14} /> : <FileText size={14} />}<span>{attachment.name}</span><button type="button" onClick={() => setAttachments((current) => current.filter((_, itemIndex) => itemIndex !== index))} aria-label={`Remove ${attachment.name}`}><X size={12} /></button></div>)}</div>}
-            <textarea ref={textareaRef} value={input} onChange={(event) => { setInput(event.target.value); resizeComposer(event.target) }} onPaste={(event) => { const pastedImages = Array.from(event.clipboardData.items || []).filter((item) => item.type.startsWith('image/')).map((item) => item.getAsFile()).filter(Boolean); if (pastedImages.length) { event.preventDefault(); addFiles(pastedImages) } }} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); handleSend() } }} rows={1} placeholder="Ada yang bisa saya bantu hari ini?" aria-label="Message Perfectly" style={{ resize: 'none' }} />
+            <textarea ref={textareaRef} value={input} onChange={(event) => { setInput(event.target.value); resizeComposer(event.target) }} onPaste={(event) => { const pastedImages = Array.from(event.clipboardData.items || []).filter((item) => item.type.startsWith('image/')).map((item) => item.getAsFile()).filter(Boolean); if (pastedImages.length) { event.preventDefault(); addFiles(pastedImages) } }} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); handleSend() } }} rows={1} placeholder="What can I help you with today?" aria-label="Message Perfectly" style={{ resize: 'none' }} />
             <div className="workspace-composer-footer">
               <div className="composer-left-tools">
                 <button type="button" className="composer-plus-button" onClick={() => fileRef.current?.click()} title="Attach files" aria-label="Attach files"><Plus size={20} /></button>
@@ -332,7 +332,7 @@ export default function ChatPage() {
                 <div className="composer-mode-switch" role="group" aria-label="Chat mode"><button className="active" type="button" aria-pressed="true">Chat</button><button type="button" disabled title="Cowork mode is coming soon">Cowork</button></div>
               </div>
               <div className="composer-right-tools">
-                <ModelSelector value={model} onChange={setModel} compact isPro={user?.is_pro === true} onLocked={() => setStatusError('GPT dan Claude hanya tersedia untuk pengguna Perfectly Pro. Hubungi administrator untuk upgrade akun.')} />
+                <ModelSelector value={model} onChange={setModel} compact isPro={user?.is_pro === true} onLocked={() => setStatusError('GPT and Claude are available to Perfectly Pro users only. Contact the administrator to upgrade your account.')} />
                 <button type="button" className={`composer-voice-button ${voiceListening ? 'listening' : ''}`} onClick={startVoiceInput} title="Voice input" aria-label={voiceListening ? 'Stop voice input' : 'Start voice input'}><Mic size={17} /></button>
                 <button type="button" className="workspace-send-button" disabled={sending || (!input.trim() && !attachments.length)} onClick={() => handleSend()} aria-label="Send message">{sending ? <span className="button-spinner" /> : <ArrowUp size={17} />}</button>
               </div>

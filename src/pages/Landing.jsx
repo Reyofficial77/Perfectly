@@ -63,16 +63,16 @@ export default function Landing() {
     let imageBytes = attachments.reduce((sum, item) => sum + (item.dataUrl ? Math.floor(item.dataUrl.length * 0.75) : 0), 0)
     for (const file of Array.from(fileList || []).slice(0, 4 - attachments.length)) {
       if (file.size > 1.5 * 1024 * 1024) {
-        setComposerError(`${file.name} melebihi batas 1,5 MB.`)
+        setComposerError(`${file.name} exceeds the 1.5 MB limit.`)
         continue
       }
       if (file.type.startsWith('image/')) {
         if (!['image/png', 'image/jpeg', 'image/webp', 'image/gif'].includes(file.type)) {
-          setComposerError('Format gambar yang didukung: PNG, JPG, WEBP, dan GIF.')
+          setComposerError('Supported image formats: PNG, JPG, WEBP, and GIF.')
           continue
         }
         if (imageBytes + file.size > 1.5 * 1024 * 1024) {
-          setComposerError('Total gambar dalam satu pesan maksimal 1,5 MB.')
+          setComposerError('The total image size per message cannot exceed 1.5 MB.')
           continue
         }
         const dataUrl = await new Promise((resolve, reject) => {
@@ -86,12 +86,12 @@ export default function Landing() {
       } else {
         const extension = file.name.split('.').pop()?.toLowerCase()
         if (!allowedText.includes(extension)) {
-          setComposerError(`File ${file.name} belum didukung.`)
+          setComposerError(`File ${file.name} is not supported.`)
           continue
         }
         const content = await file.text()
         if (content.length > 80000) {
-          setComposerError(`${file.name} terlalu besar. Maksimal 80.000 karakter.`)
+          setComposerError(`${file.name} is too large. The maximum size is 80,000 characters.`)
           continue
         }
         next.push({ name: file.name, type: 'text/plain', text: content })
@@ -104,7 +104,7 @@ export default function Landing() {
   function startVoiceInput() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
     if (!SpeechRecognition) {
-      setComposerError('Voice input belum didukung browser ini. Kamu tetap bisa mengetik prompt.')
+      setComposerError('Voice input is not supported by this browser. You can still type your prompt.')
       return
     }
     if (recognitionRef.current) {
@@ -123,7 +123,7 @@ export default function Landing() {
       requestAnimationFrame(() => resizePrompt())
     }
     recognition.onend = () => { recognitionRef.current = null; setVoiceListening(false) }
-    recognition.onerror = () => { recognitionRef.current = null; setVoiceListening(false); setComposerError('Voice input tidak dapat dimulai.') }
+    recognition.onerror = () => { recognitionRef.current = null; setVoiceListening(false); setComposerError('Voice input could not be started.') }
     recognitionRef.current = recognition
     setVoiceListening(true)
     recognition.start()
@@ -138,7 +138,7 @@ export default function Landing() {
     sessionStorage.setItem('perfectly.pendingModel', model)
     sessionStorage.setItem('perfectly.pendingChatId', chatId)
     try { sessionStorage.setItem('perfectly.pendingAttachments', JSON.stringify(attachments)) }
-    catch { setComposerError('Lampiran terlalu besar untuk dibawa ke ruang chat. Coba file yang lebih kecil.'); return }
+    catch { setComposerError('The attachments are too large to transfer to the chat. Try smaller files.'); return }
     navigate(user ? `/chat/${chatId}` : `/login?next=${encodeURIComponent(`/chat/${chatId}`)}`)
   }
 
@@ -171,7 +171,7 @@ export default function Landing() {
           <p className="hero-subtitle">Think clearly. Write better code. Ship with confidence.</p>
           <div className="hero-composer">
             {attachments.length > 0 && <div className="landing-attachment-strip">{attachments.map((attachment, index) => <div className="landing-attachment-card" key={`${attachment.name}-${index}`}>{attachment.type.startsWith('image/') ? <img src={attachment.dataUrl} alt={attachment.name} /> : <span className="landing-file-icon"><FileText size={16} /></span>}<span className="landing-attachment-name"><b>{attachment.name}</b><small>{attachment.type.startsWith('image/') ? 'Image attachment' : 'Text file'}</small></span><button type="button" onClick={() => setAttachments((current) => current.filter((_, itemIndex) => itemIndex !== index))} aria-label={`Remove ${attachment.name}`}><X size={13} /></button></div>)}</div>}
-            <textarea ref={promptRef} value={prompt} onChange={(event) => { setPrompt(event.target.value); resizePrompt(event.target) }} onPaste={(event) => { const pastedImages = Array.from(event.clipboardData.items || []).filter((item) => item.type.startsWith('image/')).map((item) => item.getAsFile()).filter(Boolean); if (pastedImages.length) { event.preventDefault(); addFiles(pastedImages) } }} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); startChat() } }} placeholder={user ? "Ada yang bisa saya bantu hari ini?" : "Tulis prompt — login diperlukan untuk mengirim..."} aria-label="Describe what you want to build" rows={1} style={{ resize: 'none' }} />
+            <textarea ref={promptRef} value={prompt} onChange={(event) => { setPrompt(event.target.value); resizePrompt(event.target) }} onPaste={(event) => { const pastedImages = Array.from(event.clipboardData.items || []).filter((item) => item.type.startsWith('image/')).map((item) => item.getAsFile()).filter(Boolean); if (pastedImages.length) { event.preventDefault(); addFiles(pastedImages) } }} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); startChat() } }} placeholder={user ? "What can I help you with today?" : "Describe what you want to build... Sign in to send your prompt."} aria-label="Describe what you want to build" rows={1} style={{ resize: 'none' }} />
             <div className="composer-tools perfectly-composer-footer">
               <div className="composer-left-tools">
                 <button type="button" className="composer-plus-button" onClick={() => fileRef.current?.click()} aria-label="Attach files" title="Attach files"><Plus size={20} /></button>
@@ -179,7 +179,7 @@ export default function Landing() {
                 <div className="composer-mode-switch" role="group" aria-label="Chat mode"><button className="active" type="button" aria-pressed="true">Chat</button><button type="button" disabled title="Cowork mode is coming soon">Cowork</button></div>
               </div>
               <div className="composer-right-tools">
-                <ModelSelector value={model} onChange={setModel} compact isPro={user?.is_pro === true} onLocked={() => setComposerError(user ? 'GPT dan Claude hanya tersedia untuk pengguna Perfectly Pro. Hubungi administrator untuk upgrade.' : 'Silakan login terlebih dahulu. GPT dan Claude hanya tersedia untuk pengguna Perfectly Pro.')} />
+                <ModelSelector value={model} onChange={setModel} compact isPro={user?.is_pro === true} onLocked={() => setComposerError(user ? 'GPT and Claude are available to Perfectly Pro users only. Contact the administrator to upgrade.' : 'Please sign in first. GPT and Claude are available to Perfectly Pro users only.')} />
                 <button type="button" className={`composer-voice-button ${voiceListening ? 'listening' : ''}`} onClick={startVoiceInput} aria-label={voiceListening ? 'Stop voice input' : 'Start voice input'} title="Voice input"><Mic size={17} /></button>
                 <button className="send-button perfectly-send-button" onClick={() => startChat()} type="button" aria-label="Start chat" disabled={!prompt.trim() && attachments.length === 0}><ArrowRight size={18} /></button>
               </div>
@@ -189,7 +189,7 @@ export default function Landing() {
           <div className="suggestion-row">
             {suggestions.map(([label, value]) => <button key={label} className="suggestion-chip" onClick={() => { setPrompt(value); requestAnimationFrame(() => resizePrompt()) }} type="button"><Code2 size={13} />{label}</button>)}
           </div>
-          <div className="hero-note"><ShieldCheck size={14} /> {user ? "Your API keys stay on the server. Your workspace stays yours." : "Login diperlukan sebelum prompt dapat dikirim."}</div>
+          <div className="hero-note"><ShieldCheck size={14} /> {user ? "Your API keys stay on the server. Your workspace stays yours." : "Sign in is required before you can send a prompt."}</div>
         </header>
 
         <section className="community-section page-wrap" id="community">

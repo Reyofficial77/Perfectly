@@ -35,13 +35,13 @@ function requireSameOrigin(req) {
   const requestHost = String(req.headers['x-forwarded-host'] || req.headers.host || '').split(',')[0].trim()
   try {
     if (new URL(origin).host !== requestHost) {
-      const error = new Error('Permintaan lintas origin ditolak.')
+      const error = new Error('Cross-origin request was rejected.')
       error.status = 403
       throw error
     }
   } catch (error) {
     if (error.status) throw error
-    const invalid = new Error('Origin permintaan tidak valid.')
+    const invalid = new Error('The request origin is invalid.')
     invalid.status = 403
     throw invalid
   }
@@ -117,6 +117,6 @@ export default async function handler(req, res) {
     }
     const status = Number.isInteger(error.status) ? error.status : 500
     if (status >= 500) console.error('[Perfectly Auth]', error)
-    return sendJson(res, status, { error: error.message || 'Terjadi kesalahan autentikasi.' })
+    return sendJson(res, status, { error: error.message || 'An authentication error occurred.' })
   }
 }
