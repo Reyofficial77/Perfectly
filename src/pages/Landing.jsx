@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { ArrowRight, Check, ChevronRight, Code2, FileCode2, FileText, GitBranch, Menu, MessageSquareText, Mic, Plus, Search, ShieldCheck, Sparkles, Terminal, WandSparkles, X } from 'lucide-react'
+import { ArrowRight, Check, ChevronRight, Code2, FileCode2, FileImage, FileText, GitBranch, Menu, MessageSquareText, Mic, Plus, Search, ShieldCheck, Sparkles, Terminal, WandSparkles, X } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import Brand from '../components/Brand'
 import ThemeToggle from '../components/ThemeToggle'
