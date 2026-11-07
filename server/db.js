@@ -24,10 +24,12 @@ export async function ensureSchema() {
           password_hash TEXT,
           name TEXT,
           avatar_url TEXT,
+          is_pro BOOLEAN NOT NULL DEFAULT FALSE,
           created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
           updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         )
       `
+      await sql`ALTER TABLE perfectly_users ADD COLUMN IF NOT EXISTS is_pro BOOLEAN NOT NULL DEFAULT FALSE`
       await sql`
         CREATE TABLE IF NOT EXISTS perfectly_oauth_accounts (
           id UUID PRIMARY KEY,
@@ -49,6 +51,7 @@ export async function ensureSchema() {
       await sql`
         CREATE TABLE IF NOT EXISTS perfectly_conversations (
           id UUID PRIMARY KEY,
+          public_id TEXT,
           user_id UUID NOT NULL REFERENCES perfectly_users(id) ON DELETE CASCADE,
           title TEXT NOT NULL DEFAULT 'New conversation',
           model TEXT NOT NULL DEFAULT 'beam',
@@ -57,6 +60,15 @@ export async function ensureSchema() {
           updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         )
       `
+      // Add a public 25-character URL ID without changing the existing UUID primary key.
+      await sql`ALTER TABLE perfectly_conversations ADD COLUMN IF NOT EXISTS public_id TEXT`
+      await sql`
+        UPDATE perfectly_conversations
+        SET public_id = SUBSTRING(TRANSLATE(REPLACE(gen_random_uuid()::text, '-', ''), '0123456789abcdef', 'abcdefghijklmnop'), 1, 25)
+        WHERE public_id IS NULL
+      `
+      await sql`ALTER TABLE perfectly_conversations ALTER COLUMN public_id SET NOT NULL`
+      await sql`CREATE UNIQUE INDEX IF NOT EXISTS perfectly_conversations_public_id_idx ON perfectly_conversations(public_id)`
       await sql`CREATE INDEX IF NOT EXISTS perfectly_sessions_user_idx ON perfectly_sessions(user_id)`
       await sql`CREATE INDEX IF NOT EXISTS perfectly_sessions_expiry_idx ON perfectly_sessions(expires_at)`
       await sql`CREATE INDEX IF NOT EXISTS perfectly_conversations_user_updated_idx ON perfectly_conversations(user_id, updated_at DESC)`

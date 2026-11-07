@@ -10,9 +10,9 @@ export default async function handler(req, res) {
   }
 
   try {
-    await authenticateRequest(req)
+    const user = await authenticateRequest(req)
     const { model, messages } = req.body || {}
-    const result = await generateReply(model, messages)
+    const result = await generateReply(model, messages, { isPro: user.is_pro === true })
     return res.status(200).json({ ok: true, ...result })
   } catch (error) {
     const status = Number.isInteger(error.status) ? error.status : 500

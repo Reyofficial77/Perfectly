@@ -1,8 +1,10 @@
+import { useState } from 'react'
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { AuthProvider, ThemeProvider, useAuth } from './context'
 import Landing from './pages/Landing'
 import AuthPage, { AuthCallback } from './pages/AuthPage'
 import ChatPage from './pages/ChatPage'
+import { createChatId, isChatId } from './lib/ids'
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
@@ -12,6 +14,11 @@ function ProtectedRoute({ children }) {
   return children
 }
 
+function NewChatRedirect() {
+  const [chatId] = useState(() => createChatId())
+  return <Navigate to={`/chat/${chatId}`} replace />
+}
+
 function AppRoutes() {
   return (
     <Routes>
@@ -19,7 +26,8 @@ function AppRoutes() {
       <Route path="/login" element={<AuthPage mode="login" />} />
       <Route path="/signup" element={<AuthPage mode="signup" />} />
       <Route path="/auth/callback" element={<AuthCallback />} />
-      <Route path="/app" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
+      <Route path="/app" element={<ProtectedRoute><NewChatRedirect /></ProtectedRoute>} />
+      <Route path="/chat/:chatId" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
@@ -28,3 +36,5 @@ function AppRoutes() {
 export default function App() {
   return <ThemeProvider><AuthProvider><AppRoutes /></AuthProvider></ThemeProvider>
 }
+
+export { isChatId }

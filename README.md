@@ -9,15 +9,22 @@ Starter project **React + Vite** untuk workspace AI coding Perfectly, berdasarka
 - Login dan sign up email/password, Google OAuth, dan GitHub OAuth.
 - Autentikasi, akun, session, dan riwayat chat disimpan di **Neon PostgreSQL**.
 - Password email disimpan sebagai hash `scrypt`; session memakai token acak yang disimpan dalam bentuk SHA-256 hash dan cookie `HttpOnly`.
-- Workspace `/app` dengan chat bubble user/AI, Markdown, loading indicator, riwayat percakapan lintas perangkat, logout, dan pemilih model.
+- Workspace chat dinamis di `/chat/{25-karakter-acak}` dengan chat bubble user/AI yang mendukung Markdown dan GitHub Flavored Markdown, loading indicator, riwayat lintas perangkat, logout, dan pemilih model. `/app` otomatis membuka chat baru.
 - Upload gambar PNG/JPG/WEBP/GIF serta file teks/kode seperti TXT, MD, JSON, CSV, JS/TS, HTML, CSS, Python, Java, Go, Rust, SQL, LOG, YAML, XML, dan SH.
 - Backend serverless Vercel di `/api/auth`, `/api/auth/callback/*`, `/api/chat`, `/api/chats`, dan `/api/health`.
-- Integrasi Ollama Cloud untuk Beam dan Gemma 4, OpenAI API untuk GPT, serta Anthropic API untuk Claude.
+- Integrasi Ollama Cloud untuk Beam dan Gemma 4, OpenAI API untuk GPT, serta Anthropic API untuk Claude. Model default adalah Beam.
 - API key database dan AI hanya dibaca di backend. Tidak ada secret yang dikirim ke browser.
 
 ## Tema tampilan
 
-Perfectly dibuka dalam **dark mode** secara default. Gunakan tombol ikon matahari/bulan di bagian atas halaman untuk berpindah ke light mode atau kembali ke dark mode. Pilihan disimpan pada `localStorage` dengan key `perfectly.theme`, sehingga berlaku konsisten di landing page, login, sign up, dan workspace pada browser yang sama.
+Perfectly dibuka dalam **dark mode** secara default. Gunakan tombol ikon matahari/bulan di bagian atas halaman untuk berpindah ke light mode atau kembali ke dark mode. Pilihan disimpan pada `localStorage` dengan key `perfectly.theme`, sehingga berlaku konsisten di landing page, login, sign up, dan workspace pada browser yang sama. Composer memakai model Beam secara default, input bertambah tinggi saat prompt panjang, Enter mengirim prompt, dan Shift+Enter membuat baris baru.
+
+
+## Chat routes dan composer
+
+Setiap chat baru memakai URL `/chat/{id}`. ID tersebut berisi tepat **25 karakter alfanumerik** dan dibuat secara acak di browser ketika prompt dikirim. Contoh bentuk URL: `/chat/Ab3dEf7GhJkLmN2pQr5StUvWx`. Tabel Neon mempertahankan UUID internal dan memakai kolom unik `public_id` untuk URL, sehingga data percakapan lama tidak perlu mengubah primary key.
+
+Composer dibuat ringkas seperti input chat modern: tinggi input bertambah mengikuti teks sampai batas yang nyaman, `Enter` mengirim pesan, sedangkan `Shift+Enter` menambah baris. Tombol lampiran menerima file gambar dan teks/kode, termasuk gambar yang di-paste dari clipboard. Markdown dan GitHub Flavored Markdown ditampilkan pada bubble user dan AI. Model awal adalah **Beam**; model dapat diganti melalui selector di samping tombol kirim. Tombol Cowork ditampilkan sebagai pratinjau dan belum menjalankan agent desktop.
 
 ## 1. Instalasi dan development
 
@@ -67,7 +74,7 @@ Tabel dibuat otomatis ketika API pertama kali dipanggil. Bila ingin membuatnya m
 - `perfectly_users` — akun email, password hash, dan profil.
 - `perfectly_oauth_accounts` — identitas Google/GitHub yang terhubung ke akun.
 - `perfectly_sessions` — session login yang memiliki masa berlaku 30 hari.
-- `perfectly_conversations` — riwayat chat dalam kolom JSONB, terikat ke pemilik akun.
+- `perfectly_conversations` — riwayat chat dalam kolom JSONB, terikat ke pemilik akun. Kolom `public_id` menyimpan ID URL alfanumerik 25 karakter; UUID internal tetap dipakai sebagai primary key.
 
 Riwayat chat dipisahkan berdasarkan `user_id`, jadi satu akun tidak dapat membaca percakapan akun lain melalui API.
 
@@ -158,7 +165,7 @@ Buka `/api/health` pada deployment. Response menampilkan status koneksi Neon, st
 - Belum tersedia verifikasi email, reset password, MFA, dan rate limiting khusus login. Tambahkan mekanisme tersebut sebelum membuka layanan untuk penggunaan publik berskala besar.
 - Riwayat chat disimpan di Neon dan dapat dimuat lintas browser/perangkat setelah login.
 - Lampiran gambar hanya dikirim ke provider AI ketika request berlangsung; riwayat database hanya menyimpan nama dan tipe lampiran, bukan binary gambar.
-- PDF parsing, impor repository, akses shell/terminal, operasi Git, dan pengubahan file otomatis belum tersedia. Assistant tidak boleh dianggap telah menjalankan command atau mengubah repository.
+- Mode Cowork masih berupa tombol pratinjau dan belum menjalankan agent desktop. PDF parsing, impor repository, akses shell/terminal, operasi Git, dan pengubahan file otomatis belum tersedia. Assistant tidak boleh dianggap telah menjalankan command atau mengubah repository.
 - Belum ada sistem paket berbayar / PRO.
 - Gambar dibatasi maksimal 1,5 MB per file dan total 1,5 MB per pesan. Format yang diterima: PNG, JPG, WEBP, GIF. File teks/kode dibatasi 80.000 karakter per file.
 
@@ -170,3 +177,7 @@ npm run lint
 ```
 
 Hasil build dibuat di `dist/`.
+
+## Akun Perfectly Pro
+
+Akun baru otomatis berstatus Free. Model GPT dan Claude hanya dapat digunakan oleh akun dengan `perfectly_users.is_pro = TRUE`. Jalankan `UPDATE perfectly_users SET is_pro = TRUE WHERE email = 'user@example.com';` di Neon SQL Editor untuk memberikan akses Pro. Payment gateway belum diimplementasikan.

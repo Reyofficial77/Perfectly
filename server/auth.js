@@ -61,7 +61,7 @@ function requestOrigin(req) {
 
 function publicUser(row) {
   if (!row) return null
-  return { id: row.id, email: row.email, name: row.name || null, avatar_url: row.avatar_url || null }
+  return { id: row.id, email: row.email, name: row.name || null, avatar_url: row.avatar_url || null, is_pro: row.is_pro === true }
 }
 
 export async function findSessionUser(req) {
@@ -70,7 +70,7 @@ export async function findSessionUser(req) {
   const sql = await ensureSchema()
   const tokenHash = hashToken(token)
   const rows = await sql`
-    SELECT u.id, u.email, u.name, u.avatar_url
+    SELECT u.id, u.email, u.name, u.avatar_url, u.is_pro
     FROM perfectly_sessions s
     JOIN perfectly_users u ON u.id = s.user_id
     WHERE s.token_hash = ${tokenHash} AND s.expires_at > NOW()
@@ -143,7 +143,7 @@ export async function registerWithEmail(emailInput, password, nameInput = '') {
   const rows = await sql`
     INSERT INTO perfectly_users (id, email, password_hash, name)
     VALUES (${id}::uuid, ${email}, ${passwordHash}, ${name || email.split('@')[0]})
-    RETURNING id, email, name, avatar_url
+    RETURNING id, email, name, avatar_url, is_pro
   `
   return publicUser(rows[0])
 }
@@ -156,7 +156,7 @@ export async function loginWithEmail(emailInput, password) {
     throw error
   }
   const sql = await ensureSchema()
-  const rows = await sql`SELECT id, email, name, avatar_url, password_hash FROM perfectly_users WHERE email = ${email} LIMIT 1`
+  const rows = await sql`SELECT id, email, name, avatar_url, is_pro, password_hash FROM perfectly_users WHERE email = ${email} LIMIT 1`
   const user = rows[0]
   if (!user?.password_hash) {
     const error = new Error('Email atau password tidak cocok. Jika mendaftar melalui Google/GitHub, gunakan tombol tersebut.')
@@ -279,7 +279,7 @@ export async function resolveOAuthUser(provider, code, req) {
   const sql = await ensureSchema()
 
   const linked = await sql`
-    SELECT u.id, u.email, u.name, u.avatar_url
+    SELECT u.id, u.email, u.name, u.avatar_url, u.is_pro
     FROM perfectly_oauth_accounts a
     JOIN perfectly_users u ON u.id = a.user_id
     WHERE a.provider = ${provider} AND a.provider_user_id = ${profile.providerUserId}
@@ -287,14 +287,14 @@ export async function resolveOAuthUser(provider, code, req) {
   `
   if (linked.length) return publicUser(linked[0])
 
-  const existing = await sql`SELECT id, email, name, avatar_url FROM perfectly_users WHERE email = ${email} LIMIT 1`
+  const existing = await sql`SELECT id, email, name, avatar_url, is_pro FROM perfectly_users WHERE email = ${email} LIMIT 1`
   let user = existing[0]
   if (!user) {
     const id = randomUUID()
     const inserted = await sql`
       INSERT INTO perfectly_users (id, email, name, avatar_url)
       VALUES (${id}::uuid, ${email}, ${profile.name || email.split('@')[0]}, ${profile.avatarUrl || null})
-      RETURNING id, email, name, avatar_url
+      RETURNING id, email, name, avatar_url, is_pro
     `
     user = inserted[0]
   }

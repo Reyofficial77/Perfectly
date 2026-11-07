@@ -8,16 +8,16 @@ const MODEL_CONFIG = {
     label: 'Gemma 4', provider: 'ollama', model: () => process.env.OLLAMA_GEMMA_MODEL || 'gemma4:31b',
   },
   gptLuna: {
-    label: 'GPT 6 Luna', provider: 'openai', model: () => process.env.OPENAI_GPT_LUNA_MODEL || 'gpt-6-luna',
+    label: 'GPT 6 Luna', provider: 'openai', pro: true, model: () => process.env.OPENAI_GPT_LUNA_MODEL || 'gpt-6-luna',
   },
   gptAstra: {
-    label: 'GPT 6 Astra', provider: 'openai', model: () => process.env.OPENAI_GPT_ASTRA_MODEL || 'gpt-6-astra',
+    label: 'GPT 6 Astra', provider: 'openai', pro: true, model: () => process.env.OPENAI_GPT_ASTRA_MODEL || 'gpt-6-astra',
   },
   claudeSonnet: {
-    label: 'Claude Sonnet 5.5', provider: 'anthropic', model: () => process.env.ANTHROPIC_SONNET_MODEL || 'claude-sonnet-5-5',
+    label: 'Claude Sonnet 5.5', provider: 'anthropic', pro: true, model: () => process.env.ANTHROPIC_SONNET_MODEL || 'claude-sonnet-5-5',
   },
   claudeOpus: {
-    label: 'Claude Opus 5.5', provider: 'anthropic', model: () => process.env.ANTHROPIC_OPUS_MODEL || 'claude-opus-5-5',
+    label: 'Claude Opus 5.5', provider: 'anthropic', pro: true, model: () => process.env.ANTHROPIC_OPUS_MODEL || 'claude-opus-5-5',
   },
 }
 
@@ -25,6 +25,7 @@ export const PUBLIC_MODELS = Object.entries(MODEL_CONFIG).map(([id, config]) => 
   id,
   label: config.label,
   provider: config.provider,
+  pro: Boolean(config.pro),
 }))
 
 const SYSTEM_PROMPT = `You are Perfectly, a thoughtful AI coding assistant for software developers. Help users understand, plan, write, debug, review, and improve software. Be practical and accurate. When writing code, provide complete, usable snippets and explain where they belong. Never claim you accessed a repository, ran a command, deployed an app, or changed a file unless a connected tool actually did so. You can analyze only the text and attachments supplied in this conversation. If a request is unrelated to software, respond briefly and politely, then guide the user back to development work.`
@@ -198,11 +199,17 @@ async function callAnthropic(model, messages) {
   return (payload?.content || []).filter((part) => part.type === 'text').map((part) => part.text).join('\n')
 }
 
-export async function generateReply(modelId, inputMessages) {
+export async function generateReply(modelId, inputMessages, { isPro = false } = {}) {
   const config = MODEL_CONFIG[modelId]
   if (!config) {
     const error = new Error('Model tidak dikenali. Pilih model yang tersedia di menu.')
     error.status = 400
+    throw error
+  }
+
+  if (config.pro && isPro !== true) {
+    const error = new Error('Model GPT dan Claude hanya tersedia untuk akun Perfectly Pro.')
+    error.status = 403
     throw error
   }
 

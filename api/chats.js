@@ -1,7 +1,9 @@
+import { randomUUID } from 'node:crypto'
 import { authenticateRequest } from '../server/auth.js'
 import { ensureSchema } from '../server/db.js'
 
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+const PUBLIC_ID_PATTERN = /^[A-Za-z0-9]{25}$/
+const MESSAGE_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 const ALLOWED_MODELS = new Set(['beam', 'gemma4', 'gptLuna', 'gptAstra', 'claudeSonnet', 'claudeOpus'])
 
 function json(res, status, payload) {
@@ -11,7 +13,7 @@ function json(res, status, payload) {
 }
 
 function normalizeConversation(input) {
-  if (!input || !UUID_PATTERN.test(String(input.id || ''))) {
+  if (!input || !PUBLIC_ID_PATTERN.test(String(input.id || ''))) {
     const error = new Error('ID percakapan tidak valid.')
     error.status = 400
     throw error
@@ -22,7 +24,7 @@ function normalizeConversation(input) {
     throw error
   }
   const messages = input.messages.map((message) => {
-    if (!message || !UUID_PATTERN.test(String(message.id || '')) || !['user', 'assistant'].includes(message.role) || typeof message.content !== 'string') {
+    if (!message || !MESSAGE_ID_PATTERN.test(String(message.id || '')) || !['user', 'assistant'].includes(message.role) || typeof message.content !== 'string') {
       const error = new Error('Salah satu pesan memiliki format yang tidak valid.')
       error.status = 400
       throw error
@@ -59,7 +61,7 @@ export default async function handler(req, res) {
 
     if (req.method === 'GET') {
       const rows = await sql`
-        SELECT id, title, model, messages, updated_at
+        SELECT public_id AS id, title, model, messages, updated_at
         FROM perfectly_conversations
         WHERE user_id = ${user.id}::uuid
         ORDER BY updated_at DESC
@@ -79,18 +81,18 @@ export default async function handler(req, res) {
     if (req.method === 'POST') {
       const conversation = normalizeConversation(req.body?.conversation)
       const existing = await sql`
-        SELECT id FROM perfectly_conversations WHERE id = ${conversation.id}::uuid AND user_id = ${user.id}::uuid LIMIT 1
+        SELECT id FROM perfectly_conversations WHERE public_id = ${conversation.id} AND user_id = ${user.id}::uuid LIMIT 1
       `
       if (existing.length) {
         await sql`
           UPDATE perfectly_conversations
           SET title = ${conversation.title}, model = ${conversation.model}, messages = ${JSON.stringify(conversation.messages)}::jsonb, updated_at = NOW()
-          WHERE id = ${conversation.id}::uuid AND user_id = ${user.id}::uuid
+          WHERE public_id = ${conversation.id} AND user_id = ${user.id}::uuid
         `
       } else {
         await sql`
-          INSERT INTO perfectly_conversations (id, user_id, title, model, messages)
-          VALUES (${conversation.id}::uuid, ${user.id}::uuid, ${conversation.title}, ${conversation.model}, ${JSON.stringify(conversation.messages)}::jsonb)
+          INSERT INTO perfectly_conversations (id, public_id, user_id, title, model, messages)
+          VALUES (${randomUUID()}::uuid, ${conversation.id}, ${user.id}::uuid, ${conversation.title}, ${conversation.model}, ${JSON.stringify(conversation.messages)}::jsonb)
         `
       }
       return json(res, 200, { ok: true })
@@ -98,8 +100,8 @@ export default async function handler(req, res) {
 
     if (req.method === 'DELETE') {
       const id = String(req.query?.id || '')
-      if (!UUID_PATTERN.test(id)) return json(res, 400, { error: 'ID percakapan tidak valid.' })
-      await sql`DELETE FROM perfectly_conversations WHERE id = ${id}::uuid AND user_id = ${user.id}::uuid`
+      if (!PUBLIC_ID_PATTERN.test(id)) return json(res, 400, { error: 'ID percakapan tidak valid.' })
+      await sql`DELETE FROM perfectly_conversations WHERE public_id = ${id} AND user_id = ${user.id}::uuid`
       return json(res, 200, { ok: true })
     }
 

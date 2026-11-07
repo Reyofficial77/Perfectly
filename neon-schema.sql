@@ -1,5 +1,5 @@
 -- Perfectly Neon PostgreSQL schema.
--- The Vercel API also creates these tables automatically on first request.
+-- Run this once in Neon SQL Editor, or let the Vercel API create/migrate tables automatically.
 
 CREATE TABLE IF NOT EXISTS perfectly_users (
   id UUID PRIMARY KEY,
@@ -7,9 +7,12 @@ CREATE TABLE IF NOT EXISTS perfectly_users (
   password_hash TEXT,
   name TEXT,
   avatar_url TEXT,
+  is_pro BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+ALTER TABLE perfectly_users ADD COLUMN IF NOT EXISTS is_pro BOOLEAN NOT NULL DEFAULT FALSE;
 
 CREATE TABLE IF NOT EXISTS perfectly_oauth_accounts (
   id UUID PRIMARY KEY,
@@ -29,6 +32,7 @@ CREATE TABLE IF NOT EXISTS perfectly_sessions (
 
 CREATE TABLE IF NOT EXISTS perfectly_conversations (
   id UUID PRIMARY KEY,
+  public_id TEXT,
   user_id UUID NOT NULL REFERENCES perfectly_users(id) ON DELETE CASCADE,
   title TEXT NOT NULL DEFAULT 'New conversation',
   model TEXT NOT NULL DEFAULT 'beam',
@@ -37,6 +41,17 @@ CREATE TABLE IF NOT EXISTS perfectly_conversations (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- Safe migration for installations created before public 25-character chat URLs.
+ALTER TABLE perfectly_conversations ADD COLUMN IF NOT EXISTS public_id TEXT;
+UPDATE perfectly_conversations
+SET public_id = SUBSTRING(TRANSLATE(REPLACE(gen_random_uuid()::text, '-', ''), '0123456789abcdef', 'abcdefghijklmnop'), 1, 25)
+WHERE public_id IS NULL;
+ALTER TABLE perfectly_conversations ALTER COLUMN public_id SET NOT NULL;
+
 CREATE INDEX IF NOT EXISTS perfectly_sessions_user_idx ON perfectly_sessions(user_id);
 CREATE INDEX IF NOT EXISTS perfectly_sessions_expiry_idx ON perfectly_sessions(expires_at);
 CREATE INDEX IF NOT EXISTS perfectly_conversations_user_updated_idx ON perfectly_conversations(user_id, updated_at DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS perfectly_conversations_public_id_idx ON perfectly_conversations(public_id);
+
+-- Promote a user to Pro manually from Neon SQL Editor:
+-- UPDATE perfectly_users SET is_pro = TRUE WHERE email = 'user@example.com';

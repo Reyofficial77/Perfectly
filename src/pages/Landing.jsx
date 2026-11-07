@@ -1,10 +1,11 @@
-import { useState } from 'react'
-import { ArrowRight, Braces, Check, ChevronRight, Code2, FileCode2, FileImage, GitBranch, Menu, MessageSquareText, Search, ShieldCheck, Sparkles, Terminal, WandSparkles, X } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { ArrowRight, Check, ChevronRight, Code2, FileCode2, FileText, GitBranch, Menu, MessageSquareText, Mic, Plus, Search, ShieldCheck, Sparkles, Terminal, WandSparkles, X } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import Brand from '../components/Brand'
 import ThemeToggle from '../components/ThemeToggle'
 import ModelSelector from '../components/ModelSelector'
 import { useAuth } from '../context'
+import { createChatId } from '../lib/ids'
 
 const projects = [
   { name: 'Invoice dashboard', creator: 'mira', category: 'Web apps', tone: 'thumb-sun', symbol: '▤', forks: 142, likes: 281 },
@@ -40,15 +41,105 @@ export default function Landing() {
   const { user } = useAuth()
   const [prompt, setPrompt] = useState('')
   const [model, setModel] = useState('beam')
+  const [attachments, setAttachments] = useState([])
+  const [voiceListening, setVoiceListening] = useState(false)
+  const [composerError, setComposerError] = useState('')
+  const promptRef = useRef(null)
+  const fileRef = useRef(null)
+  const recognitionRef = useRef(null)
   const [category, setCategory] = useState('All')
   const [mobileMenu, setMobileMenu] = useState(false)
 
+  function resizePrompt(element = promptRef.current) {
+    if (!element) return
+    element.style.height = 'auto'
+    element.style.height = `${Math.min(element.scrollHeight, 210)}px`
+    element.style.overflowY = element.scrollHeight > 210 ? 'auto' : 'hidden'
+  }
+
+  async function addFiles(fileList) {
+    const allowedText = ['txt', 'md', 'json', 'csv', 'js', 'jsx', 'ts', 'tsx', 'html', 'css', 'py', 'java', 'go', 'rs', 'sql', 'log', 'yaml', 'yml', 'xml', 'sh']
+    const next = []
+    let imageBytes = attachments.reduce((sum, item) => sum + (item.dataUrl ? Math.floor(item.dataUrl.length * 0.75) : 0), 0)
+    for (const file of Array.from(fileList || []).slice(0, 4 - attachments.length)) {
+      if (file.size > 1.5 * 1024 * 1024) {
+        setComposerError(`${file.name} melebihi batas 1,5 MB.`)
+        continue
+      }
+      if (file.type.startsWith('image/')) {
+        if (!['image/png', 'image/jpeg', 'image/webp', 'image/gif'].includes(file.type)) {
+          setComposerError('Format gambar yang didukung: PNG, JPG, WEBP, dan GIF.')
+          continue
+        }
+        if (imageBytes + file.size > 1.5 * 1024 * 1024) {
+          setComposerError('Total gambar dalam satu pesan maksimal 1,5 MB.')
+          continue
+        }
+        const dataUrl = await new Promise((resolve, reject) => {
+          const reader = new FileReader()
+          reader.onload = () => resolve(reader.result)
+          reader.onerror = reject
+          reader.readAsDataURL(file)
+        })
+        next.push({ name: file.name, type: file.type, dataUrl })
+        imageBytes += file.size
+      } else {
+        const extension = file.name.split('.').pop()?.toLowerCase()
+        if (!allowedText.includes(extension)) {
+          setComposerError(`File ${file.name} belum didukung.`)
+          continue
+        }
+        const content = await file.text()
+        if (content.length > 80000) {
+          setComposerError(`${file.name} terlalu besar. Maksimal 80.000 karakter.`)
+          continue
+        }
+        next.push({ name: file.name, type: 'text/plain', text: content })
+      }
+    }
+    setAttachments((current) => [...current, ...next].slice(0, 4))
+    if (fileRef.current) fileRef.current.value = ''
+  }
+
+  function startVoiceInput() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+    if (!SpeechRecognition) {
+      setComposerError('Voice input belum didukung browser ini. Kamu tetap bisa mengetik prompt.')
+      return
+    }
+    if (recognitionRef.current) {
+      recognitionRef.current.stop()
+      recognitionRef.current = null
+      setVoiceListening(false)
+      return
+    }
+    const recognition = new SpeechRecognition()
+    const startingText = prompt.trim()
+    recognition.lang = 'id-ID'
+    recognition.interimResults = true
+    recognition.onresult = (event) => {
+      const transcript = Array.from(event.results).map((result) => result[0]?.transcript || '').join(' ').trim()
+      setPrompt([startingText, transcript].filter(Boolean).join(' '))
+      requestAnimationFrame(() => resizePrompt())
+    }
+    recognition.onend = () => { recognitionRef.current = null; setVoiceListening(false) }
+    recognition.onerror = () => { recognitionRef.current = null; setVoiceListening(false); setComposerError('Voice input tidak dapat dimulai.') }
+    recognitionRef.current = recognition
+    setVoiceListening(true)
+    recognition.start()
+  }
+
   function startChat(text = prompt) {
     const cleaned = text.trim()
-    if (!cleaned) return
+    if (!cleaned && attachments.length === 0) return
+    recognitionRef.current?.stop()
+    const chatId = createChatId()
     sessionStorage.setItem('perfectly.pendingPrompt', cleaned)
     sessionStorage.setItem('perfectly.pendingModel', model)
-    navigate(user ? '/app' : '/login?next=/app')
+    sessionStorage.setItem('perfectly.pendingChatId', chatId)
+    try { sessionStorage.setItem('perfectly.pendingAttachments', JSON.stringify(attachments)) }
+    catch { setComposerError('Lampiran terlalu besar untuk dibawa ke ruang chat. Coba file yang lebih kecil.'); return }
+    navigate(user ? `/chat/${chatId}` : `/login?next=${encodeURIComponent(`/chat/${chatId}`)}`)
   }
 
   const filteredProjects = category === 'All' ? projects : projects.filter((project) => project.category === category)
@@ -79,17 +170,26 @@ export default function Landing() {
           <h1>What are we<br className="mobile-break" /> shipping today<span className="hero-period">?</span></h1>
           <p className="hero-subtitle">Think clearly. Write better code. Ship with confidence.</p>
           <div className="hero-composer">
-            <textarea value={prompt} onChange={(event) => setPrompt(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); startChat() } }} placeholder="Describe a feature, paste an error, or ask about your code…" aria-label="Describe what you want to build" rows={3} />
-            <div className="composer-tools">
-              <ModelSelector value={model} onChange={setModel} compact />
-              <span className="composer-hint">Press Enter to send</span>
-              <button className="send-button" onClick={() => startChat()} type="button" aria-label="Start chat" disabled={!prompt.trim()}><ArrowRight size={18} /></button>
+            {attachments.length > 0 && <div className="landing-attachment-strip">{attachments.map((attachment, index) => <div className="landing-attachment-card" key={`${attachment.name}-${index}`}>{attachment.type.startsWith('image/') ? <img src={attachment.dataUrl} alt={attachment.name} /> : <span className="landing-file-icon"><FileText size={16} /></span>}<span className="landing-attachment-name"><b>{attachment.name}</b><small>{attachment.type.startsWith('image/') ? 'Image attachment' : 'Text file'}</small></span><button type="button" onClick={() => setAttachments((current) => current.filter((_, itemIndex) => itemIndex !== index))} aria-label={`Remove ${attachment.name}`}><X size={13} /></button></div>)}</div>}
+            <textarea ref={promptRef} value={prompt} onChange={(event) => { setPrompt(event.target.value); resizePrompt(event.target) }} onPaste={(event) => { const pastedImages = Array.from(event.clipboardData.items || []).filter((item) => item.type.startsWith('image/')).map((item) => item.getAsFile()).filter(Boolean); if (pastedImages.length) { event.preventDefault(); addFiles(pastedImages) } }} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); startChat() } }} placeholder={user ? "Ada yang bisa saya bantu hari ini?" : "Tulis prompt — login diperlukan untuk mengirim..."} aria-label="Describe what you want to build" rows={1} style={{ resize: 'none' }} />
+            <div className="composer-tools perfectly-composer-footer">
+              <div className="composer-left-tools">
+                <button type="button" className="composer-plus-button" onClick={() => fileRef.current?.click()} aria-label="Attach files" title="Attach files"><Plus size={20} /></button>
+                <input ref={fileRef} type="file" hidden multiple accept="image/png,image/jpeg,image/webp,image/gif,.txt,.md,.json,.csv,.js,.jsx,.ts,.tsx,.html,.css,.py,.java,.go,.rs,.sql,.log,.yaml,.yml,.xml,.sh" onChange={(event) => addFiles(event.target.files)} />
+                <div className="composer-mode-switch" role="group" aria-label="Chat mode"><button className="active" type="button" aria-pressed="true">Chat</button><button type="button" disabled title="Cowork mode is coming soon">Cowork</button></div>
+              </div>
+              <div className="composer-right-tools">
+                <ModelSelector value={model} onChange={setModel} compact isPro={user?.is_pro === true} onLocked={() => setComposerError(user ? 'GPT dan Claude hanya tersedia untuk pengguna Perfectly Pro. Hubungi administrator untuk upgrade.' : 'Silakan login terlebih dahulu. GPT dan Claude hanya tersedia untuk pengguna Perfectly Pro.')} />
+                <button type="button" className={`composer-voice-button ${voiceListening ? 'listening' : ''}`} onClick={startVoiceInput} aria-label={voiceListening ? 'Stop voice input' : 'Start voice input'} title="Voice input"><Mic size={17} /></button>
+                <button className="send-button perfectly-send-button" onClick={() => startChat()} type="button" aria-label="Start chat" disabled={!prompt.trim() && attachments.length === 0}><ArrowRight size={18} /></button>
+              </div>
             </div>
+            {composerError && <div className="landing-composer-error" role="status">{composerError}<button type="button" onClick={() => setComposerError('')} aria-label="Dismiss error"><X size={12} /></button></div>}
           </div>
           <div className="suggestion-row">
-            {suggestions.map(([label, value]) => <button key={label} className="suggestion-chip" onClick={() => setPrompt(value)} type="button"><Code2 size={13} />{label}</button>)}
+            {suggestions.map(([label, value]) => <button key={label} className="suggestion-chip" onClick={() => { setPrompt(value); requestAnimationFrame(() => resizePrompt()) }} type="button"><Code2 size={13} />{label}</button>)}
           </div>
-          <div className="hero-note"><ShieldCheck size={14} /> Your API keys stay on the server. Your workspace stays yours.</div>
+          <div className="hero-note"><ShieldCheck size={14} /> {user ? "Your API keys stay on the server. Your workspace stays yours." : "Login diperlukan sebelum prompt dapat dikirim."}</div>
         </header>
 
         <section className="community-section page-wrap" id="community">
