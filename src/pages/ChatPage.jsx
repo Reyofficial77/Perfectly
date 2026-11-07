@@ -4,6 +4,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { Link, useNavigate } from 'react-router-dom'
 import Brand from '../components/Brand'
+import ThemeToggle from '../components/ThemeToggle'
 import ModelSelector, { MODELS } from '../components/ModelSelector'
 import { useAuth } from '../context'
 import { deleteChat, fetchChats, logout as logoutRequest, saveChat, sendChat } from '../lib/api'
@@ -246,7 +247,7 @@ export default function ChatPage() {
       <main className="workspace-main">
         <header className="workspace-header">
           <div className="workspace-header-left"><button className="icon-button mobile-sidebar-toggle" type="button" onClick={() => setSidebarOpen(true)} aria-label="Open sidebar"><Menu size={19} /></button><Link to="/" className="workspace-mobile-brand"><Brand compact /></Link><span className="workspace-context">Workspace <span>/</span> {activeChat?.title || 'New chat'}</span></div>
-          <div className="workspace-header-actions"><ModelSelector value={model} onChange={setModel} compact /><button className="icon-button help-button" type="button" title="Help"><CircleHelp size={17} /></button><button className="icon-button logout-header" type="button" onClick={logout} title="Log out"><LogOut size={17} /></button></div>
+          <div className="workspace-header-actions"><ThemeToggle compact /><ModelSelector value={model} onChange={setModel} compact /><button className="icon-button help-button" type="button" title="Help"><CircleHelp size={17} /></button><button className="icon-button logout-header" type="button" onClick={logout} title="Log out"><LogOut size={17} /></button></div>
         </header>
 
         <div className={`chat-scroll-area ${messages.length === 0 ? 'chat-empty' : ''}`}>

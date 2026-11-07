@@ -1,5 +1,5 @@
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
-import { AuthProvider, useAuth } from './context'
+import { AuthProvider, ThemeProvider, useAuth } from './context'
 import Landing from './pages/Landing'
 import AuthPage, { AuthCallback } from './pages/AuthPage'
 import ChatPage from './pages/ChatPage'
@@ -26,5 +26,5 @@ function AppRoutes() {
 }
 
 export default function App() {
-  return <AuthProvider><AppRoutes /></AuthProvider>
+  return <ThemeProvider><AuthProvider><AppRoutes /></AuthProvider></ThemeProvider>
 }

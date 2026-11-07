@@ -5,6 +5,7 @@ Starter project **React + Vite** untuk workspace AI coding Perfectly, berdasarka
 ## Fitur
 
 - Landing page responsive, mobile-first, animasi ringan, dan tampilan monokrom.
+- Dark mode tetap menjadi tema default; tersedia toggle Dark/Light di landing page, login/sign up, dan workspace. Pilihan tema disimpan di browser dan dipertahankan saat halaman dibuka kembali.
 - Login dan sign up email/password, Google OAuth, dan GitHub OAuth.
 - Autentikasi, akun, session, dan riwayat chat disimpan di **Neon PostgreSQL**.
 - Password email disimpan sebagai hash `scrypt`; session memakai token acak yang disimpan dalam bentuk SHA-256 hash dan cookie `HttpOnly`.
@@ -13,6 +14,10 @@ Starter project **React + Vite** untuk workspace AI coding Perfectly, berdasarka
 - Backend serverless Vercel di `/api/auth`, `/api/auth/callback/*`, `/api/chat`, `/api/chats`, dan `/api/health`.
 - Integrasi Ollama Cloud untuk Beam dan Gemma 4, OpenAI API untuk GPT, serta Anthropic API untuk Claude.
 - API key database dan AI hanya dibaca di backend. Tidak ada secret yang dikirim ke browser.
+
+## Tema tampilan
+
+Perfectly dibuka dalam **dark mode** secara default. Gunakan tombol ikon matahari/bulan di bagian atas halaman untuk berpindah ke light mode atau kembali ke dark mode. Pilihan disimpan pada `localStorage` dengan key `perfectly.theme`, sehingga berlaku konsisten di landing page, login, sign up, dan workspace pada browser yang sama.
 
 ## 1. Instalasi dan development
 

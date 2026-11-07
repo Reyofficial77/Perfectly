@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { ArrowRight, Braces, Check, ChevronRight, Code2, FileCode2, FileImage, GitBranch, Menu, MessageSquareText, Search, ShieldCheck, Sparkles, Terminal, WandSparkles, X } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import Brand from '../components/Brand'
+import ThemeToggle from '../components/ThemeToggle'
 import ModelSelector from '../components/ModelSelector'
 import { useAuth } from '../context'
 
@@ -63,6 +64,7 @@ export default function Landing() {
             <a href="#community">Community</a>
             <a href="#docs">Docs</a>
           </div>
+          <ThemeToggle compact />
           <div className="nav-actions">
             {user ? <Link className="button button-solid" to="/app">Open workspace <ArrowRight size={15} /></Link> : <><Link className="button button-quiet" to="/login">Log in</Link><Link className="button button-solid" to="/signup">Sign up <ArrowRight size={15} /></Link></>}
           </div>

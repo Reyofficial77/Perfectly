@@ -1,6 +1,30 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 
 const AuthContext = createContext(null)
+const ThemeContext = createContext(null)
+
+export function ThemeProvider({ children }) {
+  const [theme, setTheme] = useState(() => {
+    try { return localStorage.getItem('perfectly.theme') === 'light' ? 'light' : 'dark' }
+    catch { return 'dark' }
+  })
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#0d0d0d' : '#fafafa')
+    try { localStorage.setItem('perfectly.theme', theme) } catch { /* Storage may be unavailable. */ }
+  }, [theme])
+
+  const toggleTheme = useCallback(() => setTheme((current) => current === 'dark' ? 'light' : 'dark'), [])
+  const value = useMemo(() => ({ theme, setTheme, toggleTheme }), [theme, toggleTheme])
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
+}
+
+export function useTheme() {
+  const context = useContext(ThemeContext)
+  if (!context) throw new Error('useTheme harus digunakan di dalam ThemeProvider.')
+  return context
+}
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)

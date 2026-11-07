@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { ArrowLeft, ArrowRight, Github, LockKeyhole, Mail } from 'lucide-react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import Brand from '../components/Brand'
+import ThemeToggle from '../components/ThemeToggle'
 import { useAuth } from '../context'
 
 export default function AuthPage({ mode = 'login' }) {
@@ -70,7 +71,7 @@ export default function AuthPage({ mode = 'login' }) {
 
   return (
     <main className="auth-page">
-      <div className="auth-top"><Brand /><Link to="/" className="back-link"><ArrowLeft size={15} /> Back to home</Link></div>
+      <div className="auth-top"><Brand /><div className="auth-top-actions"><ThemeToggle compact /><Link to="/" className="back-link"><ArrowLeft size={15} /> Back to home</Link></div></div>
       <section className="auth-card pop-in">
         <div className="auth-card-heading"><span className="eyebrow">{isSignup ? 'START BUILDING' : 'WELCOME BACK'}</span><h1>{isSignup ? 'Create your account.' : 'Good to see you.'}</h1><p>{isSignup ? 'Your next great build starts here.' : 'Log in to continue where you left off.'}</p></div>
         <div className="social-auth">
